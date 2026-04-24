@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Management - QMS Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary": "#4f2000",
+                        "on-tertiary-fixed-variant": "#753402",
+                        "outline": "#737781",
+                        "surface-container": "#ededf3",
+                        "on-primary": "#ffffff",
+                        "background": "#f9f9ff",
+                        "secondary": "#00658d",
+                        "primary-fixed-dim": "#a6c8ff",
+                        "tertiary-fixed-dim": "#ffb68d",
+                        "primary": "#002e5b",
+                        "on-background": "#191c20",
+                        "surface-variant": "#e2e2e8",
+                        "surface-bright": "#f9f9ff",
+                        "surface-container-high": "#e7e8ee",
+                        "on-primary-fixed-variant": "#074785",
+                        "on-secondary-fixed-variant": "#004c6b",
+                        "tertiary-container": "#723100",
+                        "on-tertiary-container": "#f89a63",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#8ad1ff",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#424750",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#85b3f8",
+                        "surface-tint": "#2d5f9e",
+                        "surface-dim": "#d9d9df",
+                        "surface": "#f9f9ff",
+                        "secondary-fixed": "#c6e7ff",
+                        "primary-container": "#004482",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#001c3b",
+                        "tertiary-fixed": "#ffdbc9",
+                        "surface-container-highest": "#e2e2e8",
+                        "on-secondary-fixed": "#001e2d",
+                        "inverse-surface": "#2e3035",
+                        "inverse-primary": "#a6c8ff",
+                        "surface-container-low": "#f3f3f9",
+                        "on-secondary-container": "#005a7f",
+                        "secondary-fixed-dim": "#88cffc",
+                        "primary-fixed": "#d5e3ff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#331200",
+                        "on-surface": "#191c20",
+                        "outline-variant": "#c2c6d2",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#f0f0f6",
+                        "on-error": "#ffffff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "md": "24px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "xl": "48px",
+                        "safe-margin": "40px",
+                        "sm": "16px",
+                        "lg": "32px"
+                    },
+                    fontFamily: {
+                        "queue-hero": ["Inter"],
+                        "heading-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-title": ["Inter"],
+                        "heading-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    fontSize: {
+                        "queue-hero": ["120px", { lineHeight: "120px", letterSpacing: "-0.04em", fontWeight: "800" }],
+                        "heading-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+                        "label-sm": ["14px", { lineHeight: "20px", letterSpacing: "0.02em", fontWeight: "500" }],
+                        "display-title": ["48px", { lineHeight: "56px", fontWeight: "700" }],
+                        "heading-lg": ["32px", { lineHeight: "40px", fontWeight: "700" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg text-body-lg min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface-container-lowest text-primary font-label-sm text-label-sm fixed top-0 right-0 left-0 h-16 flex items-center justify-between px-6 z-40 border-b border-surface-variant shadow-sm pl-72">
+<div class="flex items-center gap-sm">
+<span class="font-heading-md text-heading-md text-primary tracking-tight">QMS Admin</span>
+</div>
+<div class="flex-1 max-w-md mx-md">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary focus:outline-none" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded-full flex items-center justify-center cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded-full flex items-center justify-center cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden ml-2 cursor-pointer active:opacity-80 border border-surface-variant">
+<img alt="Administrator Avatar" class="w-full h-full object-cover" data-alt="Close up portrait of a professional male administrator wearing a light blue dress shirt, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_doahlHiNH1TQ85iCgPoHBvCOfg0HCMdaE0AhISyUbfD5OL0W46gNOGeVmBd5qcssXEgJvXdAFZLH0oMtu8BBUMGs9c9eKDRRnrhPEMys7WQTZka7cIG5Lzhbf27h8fqAKRpG961VheUORBw4AlrEyh0et2zwiThKzw1cOTvuzudeb-ZoGHe2T_Yfn11Mwly2gthKFjObpmKVHESjvVJIhxXuwmyze_6ROszGGFLc0L43kEPV8AWA_2e8do5oppwIGXLdxf92Rxbg"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest text-primary font-label-sm text-label-sm h-screen w-64 fixed left-0 top-0 rounded-none border-r border-surface-variant shadow-lg flex flex-col h-full py-4 space-y-2 z-50">
+<div class="px-6 pb-6 pt-2">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined icon-fill">view_cozy</span>
+</div>
+<span class="font-heading-md text-heading-md text-primary leading-none">Queue Control</span>
+</div>
+<p class="text-xs text-on-surface-variant uppercase tracking-wider font-semibold">System Administration</p>
+</div>
+<div class="px-4 pb-4">
+<button class="w-full bg-primary text-on-primary hover:bg-primary-container transition-colors duration-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-semibold shadow-sm cursor-pointer active:opacity-80 focus:outline-none focus:ring-2 focus:ring-secondary-container">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                New Service
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto px-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all duration-200 hover:pl-4 focus:outline-none focus:ring-2 focus:ring-secondary-container" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all duration-200 hover:pl-4 focus:outline-none focus:ring-2 focus:ring-secondary-container" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span>Live Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary-container/10 text-primary border-l-4 border-primary font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary-container" href="#">
+<span class="material-symbols-outlined icon-fill">group</span>
+<span>User Management</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all duration-200 hover:pl-4 focus:outline-none focus:ring-2 focus:ring-secondary-container" href="#">
+<span class="material-symbols-outlined">settings_applications</span>
+<span>Service Config</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all duration-200 hover:pl-4 focus:outline-none focus:ring-2 focus:ring-secondary-container" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Reports</span>
+</a>
+</div>
+<div class="px-3 pt-4 border-t border-surface-variant space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-all duration-200 hover:pl-4 focus:outline-none focus:ring-2 focus:ring-secondary-container" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-error hover:bg-error-container/50 transition-all duration-200 hover:pl-4 focus:outline-none focus:ring-2 focus:ring-error-container" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="ml-64 mt-16 p-lg">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-sm mb-lg">
+<div>
+<h1 class="font-heading-lg text-heading-lg text-on-background tracking-tight">User Management</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Manage system access, roles, and status for all personnel.</p>
+</div>
+<button class="bg-primary text-on-primary font-label-sm text-label-sm px-5 py-2.5 rounded-full flex items-center gap-2 hover:bg-primary-container transition-colors shadow-sm focus:ring-2 focus:ring-secondary-container focus:outline-none w-full md:w-auto justify-center cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+                Add New User
+            </button>
+</div>
+<!-- Toolbar: Search & Filters -->
+<div class="bg-surface-container-lowest p-sm rounded-xl border border-surface-variant shadow-sm mb-md flex flex-col sm:flex-row justify-between items-center gap-4">
+<div class="relative w-full sm:max-w-xs">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface-container-low border border-surface-variant rounded-lg py-2 pl-10 pr-4 text-sm text-on-background focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors" placeholder="Search users by name or email..." type="text"/>
+</div>
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<button class="flex items-center gap-2 px-4 py-2 border border-surface-variant rounded-lg text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors focus:ring-2 focus:ring-surface-variant focus:outline-none w-full sm:w-auto justify-center">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                    Filter
+                </button>
+<button class="flex items-center gap-2 px-4 py-2 border border-surface-variant rounded-lg text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors focus:ring-2 focus:ring-surface-variant focus:outline-none w-full sm:w-auto justify-center">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                    Export
+                </button>
+</div>
+</div>
+<!-- Data Table (Styled as a modern list) -->
+<div class="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-surface-variant">
+<tr>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold">User</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold">Role</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold">Status</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold">Last Login</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<img alt="Sarah Jenkins" class="w-10 h-10 rounded-full object-cover border border-surface-variant" data-alt="Professional headshot of a confident woman with dark curly hair wearing glasses and a dark blazer against a bright background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM_-KCOGO5hl2RQMuQU1iNqmdv9LND6YQUGS_Va5zuO-fD6qDEmly47Jg4EpeD33x48O58K6-b0CxsJiMR6ocTF79KHI9isq4xeOxe-2hdeU_X8C480ZoUuhl3HQiBrHnOMWqevJeevlSGGLh53K57ZzoZQOpOI777WjZQNWBQjL0OYux9nFbILzVK0BgSvkwv-mduEhSdfu_6SOIlLcVrF8w2-cAjozjKh5wtg-WcQBFcbGGNjzaRXiz7d4bNbPM9MM4BG71Wttlf"/>
+<div>
+<div class="font-label-sm text-label-sm font-semibold text-on-background">Sarah Jenkins</div>
+<div class="text-xs text-on-surface-variant">s.jenkins@qms-system.local</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-container/10 text-primary border border-primary/20">
+                                    Administrator
+                                </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary border border-secondary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                    Active
+                                </span>
+</td>
+<td class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant">
+                                Today, 08:42 AM
+                            </td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/10 rounded-md transition-colors" title="Edit User">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container rounded-md transition-colors" title="Delete User">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-heading-md text-sm font-bold border border-surface-variant">
+                                        MK
+                                    </div>
+<div>
+<div class="font-label-sm text-label-sm font-semibold text-on-background">Michael Kusuma</div>
+<div class="text-xs text-on-surface-variant">m.kusuma@qms-system.local</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface border border-surface-variant">
+                                    Supervisor
+                                </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary border border-secondary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                    Active
+                                </span>
+</td>
+<td class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant">
+                                Yesterday, 16:30 PM
+                            </td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/10 rounded-md transition-colors" title="Edit User">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container rounded-md transition-colors" title="Delete User">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<img alt="Diana Putra" class="w-10 h-10 rounded-full object-cover border border-surface-variant" data-alt="Portrait of a friendly young asian woman with short hair wearing a white top, brightly lit outdoors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI9Nkv0FvpryhMHvdlGRMWSky6EWxU8EORQDrYzNmNgfCuhF_HERH-Np27nKaaXgDrQzSUb0iNUJfWh-kDvQzfimRQkehCZs-H2LborPhULtOJABjn3ZOfHfsoQHRBuaVmsnmz91wbhAJTPYPbEoxII4zMGIMf-GC9LpnmNxdI70BGpt6zuVhHW0QqjL98ALbmakkk0Uvjb08DSu4KF81ZXXLEqcG-8BXyowDOdoz9Ko-Axjf4vLvHm3c9rLGjaGJ11BGQ9gjUbgF6"/>
+<div>
+<div class="font-label-sm text-label-sm font-semibold text-on-background">Diana Putra</div>
+<div class="text-xs text-on-surface-variant">loket1@qms-system.local</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface border border-surface-variant">
+                                    Loket 1
+                                </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-variant text-on-surface-variant border border-outline-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                                    Inactive
+                                </span>
+</td>
+<td class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant">
+                                Oct 24, 2023
+                            </td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/10 rounded-md transition-colors" title="Edit User">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container rounded-md transition-colors" title="Delete User">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<img alt="Budi Santoso" class="w-10 h-10 rounded-full object-cover border border-surface-variant" data-alt="Portrait of a smiling young man with short dark hair and a light beard wearing a grey t-shirt, neutral studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpRUC8oShDhltuSigs8h_C4N7zQVVY6Tgj2igfNxQu6AAcTK43S3ttLowc1fZ3nm27cXYFcquB9GAiaa5lbxMXb5rPFs0Bv16c-bE_fVZJL52_Cl_dW3xwgoiAPdkbdn3zq0yUnkx-twGWvtgYkYITfYpZeI2u565LfSNItdkiSi0ZvjVtvspAEVtOzq4VCyX-F9Q8BaF4gwQNiO2pcpwLnRChfQOx7rnvdhs-gyZTEbuhnN56_lTsy6B12ecgf7PzVCYZj_jousJZ"/>
+<div>
+<div class="font-label-sm text-label-sm font-semibold text-on-background">Budi Santoso</div>
+<div class="text-xs text-on-surface-variant">loket2@qms-system.local</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface border border-surface-variant">
+                                    Loket 2
+                                </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary border border-secondary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                    Active
+                                </span>
+</td>
+<td class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant">
+                                Today, 07:55 AM
+                            </td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/10 rounded-md transition-colors" title="Edit User">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container rounded-md transition-colors" title="Delete User">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="bg-surface-container-lowest px-6 py-4 border-t border-surface-variant flex items-center justify-between">
+<span class="font-label-sm text-sm text-on-surface-variant">Showing 1 to 4 of 24 users</span>
+<div class="flex items-center gap-2">
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container border border-surface-variant disabled:opacity-50 disabled:cursor-not-allowed">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-md bg-primary text-on-primary font-label-sm text-sm flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded-md hover:bg-surface-container text-on-surface-variant font-label-sm text-sm flex items-center justify-center transition-colors">2</button>
+<button class="w-8 h-8 rounded-md hover:bg-surface-container text-on-surface-variant font-label-sm text-sm flex items-center justify-center transition-colors">3</button>
+<span class="text-on-surface-variant">...</span>
+<button class="p-1.5 rounded-md text-on-surface-variant hover:bg-surface-container border border-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>
