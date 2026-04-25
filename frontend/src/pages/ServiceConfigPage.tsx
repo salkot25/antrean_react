@@ -16,7 +16,7 @@ export default function ServiceConfigPage() {
   const [saving, setSaving] = useState(false);
   const [officeName, setOfficeName] = useState("PLN ULP Salatiga");
   const [resetTime, setResetTime] = useState("00:00");
-  const [dateFormat, setDateFormat] = useState("LONG_ID");
+  const [dateFormat, setDateFormat] = useState("DD MMMM YYYY");
   const [youtubeUrl, setYoutubeUrl] = useState(
     "https://www.youtube.com/watch?v=DHua0l0Hhu4",
   );
@@ -100,7 +100,8 @@ export default function ServiceConfigPage() {
         runningText,
       });
 
-      // Read back from sheet so UI always reflects persisted values.
+      // Wait for GAS to finish writing before reading back (no-cors POST is fire-and-forget)
+      await new Promise((r) => setTimeout(r, 1500));
       await fetchConfig();
       setMessage({ type: "success", text: "Konfigurasi berhasil disimpan!" });
     } catch (error) {
@@ -206,8 +207,8 @@ export default function ServiceConfigPage() {
                       onChange={(e) => setDateFormat(e.target.value)}
                       className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
                     >
-                      <option value="LONG_ID">
-                        Panjang — Sabtu, 25 April 2026 | 06.10 WIB
+                      <option value="DD MMMM YYYY">
+                        DD MMMM YYYY — 25 April 2026 | 06.10 WIB
                       </option>
                       <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                       <option value="MM/DD/YYYY">MM/DD/YYYY</option>

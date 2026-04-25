@@ -1,7 +1,8 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Eye, EyeOff, Zap, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, Zap } from "lucide-react";
+import { getConfig } from "../api";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -10,11 +11,20 @@ export default function LoginPage() {
 
   const from = (location.state as any)?.from?.pathname || "/admin/dashboard";
 
+  const [officeName, setOfficeName] = useState("PLN ULP Salatiga");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    getConfig()
+      .then((data) => {
+        if (data?.officeName) setOfficeName(data.officeName);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,11 +52,11 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-col justify-between w-[45%] bg-primary px-16 py-14">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
             <Zap size={22} className="text-white" fill="white" />
           </div>
           <span className="text-white text-lg font-bold tracking-tight">
-            PLN Queue System
+            {officeName}
           </span>
         </div>
 
@@ -62,7 +72,7 @@ export default function LoginPage() {
             Lebih Efisien
           </h1>
           <p className="text-white/70 text-base leading-relaxed max-w-md">
-            Sistem antrean digital terpadu untuk PLN ULP Salatiga. Pantau status
+            Sistem antrean digital terpadu untuk {officeName}. Pantau status
             layanan, kelola antrean, dan tingkatkan kepuasan pelanggan secara
             real-time.
           </p>
@@ -87,7 +97,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-white/40 text-xs">
-          © 2025 PLN ULP Salatiga. Hak cipta dilindungi.
+          © 2025 {officeName}. Hak cipta dilindungi.
         </p>
       </div>
 
@@ -96,11 +106,13 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-10">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-              <Zap size={18} className="text-white" fill="white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="PLN Logo"
+              className="h-9 w-9 object-contain"
+            />
             <span className="text-primary text-base font-bold">
-              PLN Queue System
+              {officeName}
             </span>
           </div>
 

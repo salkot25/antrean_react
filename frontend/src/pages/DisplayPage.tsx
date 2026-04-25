@@ -12,7 +12,7 @@ export default function DisplayPage() {
     "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan. Pelayanan kami mengutamakan kepuasan Anda.",
   );
   const [officeName, setOfficeName] = useState("PLN Pelayanan Pelanggan");
-  const [dateFormat, setDateFormat] = useState("LONG_ID");
+  const [dateFormat, setDateFormat] = useState("DD MMMM YYYY");
   const prevDataRef = useRef<Record<string, any>>({});
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -218,21 +218,22 @@ export default function DisplayPage() {
   const formattedDateTime = () => {
     const d = currentTime;
 
-    if (dateFormat === "LONG_ID") {
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const tzName =
+      d
+        .toLocaleTimeString("id-ID", { timeZoneName: "short" })
+        .split(" ")
+        .pop() ?? "WIB";
+    const timeStr = `${hours}.${minutes} ${tzName}`;
+
+    if (dateFormat === "DD MMMM YYYY") {
       const datePart = d.toLocaleDateString("id-ID", {
-        weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
       });
-      const hours = String(d.getHours()).padStart(2, "0");
-      const minutes = String(d.getMinutes()).padStart(2, "0");
-      const tzName =
-        d
-          .toLocaleTimeString("id-ID", { timeZoneName: "short" })
-          .split(" ")
-          .pop() ?? "WIB";
-      return `${datePart} | ${hours}.${minutes} ${tzName}`;
+      return `${datePart} | ${timeStr}`;
     }
 
     const day = String(d.getDate()).padStart(2, "0");
@@ -253,11 +254,6 @@ export default function DisplayPage() {
     }
 
     const weekday = d.toLocaleDateString("id-ID", { weekday: "long" });
-    const timeStr = d.toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
     return `${weekday}, ${dateStr} | ${timeStr}`;
   };
 

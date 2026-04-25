@@ -5,6 +5,7 @@
 // Sheet: counters → A:id | B:name   | C:service | D:last_called_number | E:last_called_at
 // Sheet: settings → A:key | B:value | C:description
 // Sheet: users    → A:id | B:username | C:fullName | D:email | E:role | F:status | G:passwordHash | H:lastLogin
+// Sheet: logs     → A:timestamp | B:level | C:module | D:event | E:message | F:connection_status | G:actor | H:path | I:details_json
 // =============================================================
 
 // Column index constants for 'users' sheet (0-based)
@@ -35,17 +36,22 @@ var C_SERVICE = 2; // C
 var C_LAST_NUM = 3; // D
 var C_LAST_AT = 4; // E
 
+// Logs retention settings
+var LOGS_MAX_ROWS = 10000; // Keep last 10k logs (excluding header)
+var LOGS_PRUNE_BATCH = 500;
+
 // =============================================================
 // HTTP Handlers
 // =============================================================
 
 function doPost(e) {
+  var action = "";
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(5000);
 
-    var request = JSON.parse(e.postData.contents);
-    var action = request.action;
+    var request = JSON.parse((e.postData && e.postData.contents) || "{}");
+    action = request.action || "";
 
     if (action === "create") {
       return handleCreateQueue(request);
@@ -65,10 +71,35 @@ function doPost(e) {
       return handleUpdateUser(request);
     } else if (action === "delete_user") {
       return handleDeleteUser(request);
+    } else if (action === "log_event") {
+      return handleLogEvent(request);
+    } else if (action === "clear_logs") {
+      return handleClearLogs(request);
+    } else if (action === "reset_queue_data") {
+      return handleResetQueueData(request);
     }
+
+    appLog(
+      "WARN",
+      "backend",
+      "invalid_action_post",
+      "Invalid POST action",
+      "UNKNOWN",
+      "system",
+      { action: action },
+    );
 
     return jsonOut({ error: "Invalid action: " + action });
   } catch (error) {
+    appLog(
+      "ERROR",
+      "backend",
+      "post_exception",
+      error.message,
+      "UNKNOWN",
+      "system",
+      { action: action },
+    );
     return jsonOut({ error: error.message });
   } finally {
     lock.releaseLock();
@@ -76,7 +107,7 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  var action = e.parameter.action;
+  var action = (e.parameter && e.parameter.action) || "";
 
   try {
     if (action === "list") {
@@ -89,10 +120,33 @@ function doGet(e) {
       return handleInitSheets();
     } else if (action === "get_users") {
       return handleGetUsers();
+    } else if (action === "health") {
+      return handleHealth();
+    } else if (action === "get_logs") {
+      return handleGetLogs(e.parameter || {});
     }
+
+    appLog(
+      "WARN",
+      "backend",
+      "invalid_action_get",
+      "Invalid GET action",
+      "UNKNOWN",
+      "system",
+      { action: action },
+    );
 
     return jsonOut({ error: "Invalid action: " + action });
   } catch (error) {
+    appLog(
+      "ERROR",
+      "backend",
+      "get_exception",
+      error.message,
+      "UNKNOWN",
+      "system",
+      { action: action },
+    );
     return jsonOut({ error: error.message });
   }
 }
@@ -204,8 +258,8 @@ function handleInitSheets() {
     ]);
     settingsSheet.appendRow([
       "dateFormat",
-      "LONG_ID",
-      "Format tanggal tampilan (LONG_ID | DD/MM/YYYY | MM/DD/YYYY | YYYY-MM-DD)",
+      "DD MMMM YYYY",
+      "Format tanggal tampilan (DD MMMM YYYY | DD/MM/YYYY | MM/DD/YYYY | YYYY-MM-DD)",
     ]);
     settingsSheet.appendRow([
       "youtubeUrl",
@@ -243,6 +297,19 @@ function handleInitSheets() {
 
   // ── users sheet ── (auto-creates with default admin)
   ensureUsersSheetReady();
+
+  // ── logs sheet ──
+  ensureLogsSheetReady();
+
+  appLog(
+    "INFO",
+    "backend",
+    "init_sheets",
+    "Sheet initialization completed",
+    "ONLINE",
+    "system",
+    {},
+  );
 
   return jsonOut({
     success: true,
@@ -324,11 +391,65 @@ function ensureUsersSheetReady() {
   return sheet;
 }
 
+function ensureLogsSheetReady() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("logs");
+
+  if (!sheet) {
+    sheet = ss.insertSheet("logs");
+  }
+
+  var firstCell = sheet.getRange(1, 1).getValue();
+  if (!firstCell || firstCell !== "timestamp") {
+    sheet
+      .getRange(1, 1, 1, 9)
+      .setValues([
+        [
+          "timestamp",
+          "level",
+          "module",
+          "event",
+          "message",
+          "connection_status",
+          "actor",
+          "path",
+          "details_json",
+        ],
+      ]);
+    sheet
+      .getRange(1, 1, 1, 9)
+      .setFontWeight("bold")
+      .setBackground("#004482")
+      .setFontColor("#ffffff");
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 190);
+    sheet.setColumnWidth(2, 80);
+    sheet.setColumnWidth(3, 120);
+    sheet.setColumnWidth(4, 160);
+    sheet.setColumnWidth(5, 300);
+    sheet.setColumnWidth(6, 150);
+    sheet.setColumnWidth(7, 140);
+    sheet.setColumnWidth(8, 180);
+    sheet.setColumnWidth(9, 450);
+  }
+
+  return sheet;
+}
+
 function handleLogin(request) {
   var username = (request.username || "").trim();
   var password = request.password || "";
 
   if (!username || !password) {
+    appLog(
+      "WARN",
+      "auth",
+      "login_failed",
+      "Login rejected: missing credentials",
+      "ONLINE",
+      username || "anonymous",
+      {},
+    );
     return jsonOut({ error: "Username dan password wajib diisi." });
   }
 
@@ -342,12 +463,30 @@ function handleLogin(request) {
       data[i][U_PASSHASH] === inputHash
     ) {
       if (data[i][U_STATUS] !== "active") {
+        appLog(
+          "WARN",
+          "auth",
+          "login_failed",
+          "Login rejected: account inactive",
+          "ONLINE",
+          username,
+          {},
+        );
         return jsonOut({
           error: "Akun tidak aktif. Hubungi administrator.",
         });
       }
       // Update last login timestamp
       sheet.getRange(i + 1, U_LASTLOGIN + 1).setValue(new Date());
+      appLog(
+        "INFO",
+        "auth",
+        "login_success",
+        "User login success",
+        "ONLINE",
+        username,
+        { role: data[i][U_ROLE] },
+      );
       return jsonOut({
         success: true,
         user: {
@@ -360,6 +499,16 @@ function handleLogin(request) {
       });
     }
   }
+
+  appLog(
+    "WARN",
+    "auth",
+    "login_failed",
+    "Login rejected: wrong username or password",
+    "ONLINE",
+    username,
+    {},
+  );
 
   return jsonOut({ error: "Username atau password salah." });
 }
@@ -394,6 +543,15 @@ function handleCreateUser(request) {
 
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][U_USERNAME]).toLowerCase() === username.toLowerCase()) {
+      appLog(
+        "WARN",
+        "users",
+        "create_user_failed",
+        "Create user rejected: duplicate username",
+        "ONLINE",
+        "system",
+        { username: username },
+      );
       return jsonOut({ error: "Username sudah digunakan." });
     }
   }
@@ -410,6 +568,11 @@ function handleCreateUser(request) {
     hash,
     "",
   ]);
+
+  appLog("INFO", "users", "create_user", "User created", "ONLINE", "system", {
+    username: username,
+    role: request.role || "operator",
+  });
 
   return jsonOut({ success: true, id: id });
 }
@@ -434,9 +597,28 @@ function handleUpdateUser(request) {
         sheet
           .getRange(i + 1, U_PASSHASH + 1)
           .setValue(hashPassword(request.password));
+      appLog(
+        "INFO",
+        "users",
+        "update_user",
+        "User updated",
+        "ONLINE",
+        "system",
+        { id: request.id, username: data[i][U_USERNAME] },
+      );
       return jsonOut({ success: true });
     }
   }
+
+  appLog(
+    "WARN",
+    "users",
+    "update_user_failed",
+    "Update user failed: user not found",
+    "ONLINE",
+    "system",
+    { id: request.id },
+  );
 
   return jsonOut({ error: "User tidak ditemukan." });
 }
@@ -457,15 +639,43 @@ function handleDeleteUser(request) {
             adminCount++;
         }
         if (adminCount <= 1) {
+          appLog(
+            "WARN",
+            "users",
+            "delete_user_failed",
+            "Delete user blocked: last active admin",
+            "ONLINE",
+            "system",
+            { id: request.id, username: data[i][U_USERNAME] },
+          );
           return jsonOut({
             error: "Tidak bisa menghapus admin terakhir.",
           });
         }
       }
+      appLog(
+        "INFO",
+        "users",
+        "delete_user",
+        "User deleted",
+        "ONLINE",
+        "system",
+        { id: request.id, username: data[i][U_USERNAME] },
+      );
       sheet.deleteRow(i + 1);
       return jsonOut({ success: true });
     }
   }
+
+  appLog(
+    "WARN",
+    "users",
+    "delete_user_failed",
+    "Delete user failed: user not found",
+    "ONLINE",
+    "system",
+    { id: request.id },
+  );
 
   return jsonOut({ error: "User tidak ditemukan." });
 }
@@ -523,6 +733,16 @@ function handleCreateQueue(request) {
     dateStr,
   ]);
 
+  appLog(
+    "INFO",
+    "queue",
+    "create_queue",
+    "Queue ticket created",
+    "ONLINE",
+    customerName || "anonymous",
+    { service: service, number: formattedNum },
+  );
+
   return jsonOut({
     number: formattedNum,
     status: "waiting",
@@ -567,6 +787,16 @@ function handleCallQueue(request) {
 
     updateCounterLastCalled(counter, service, foundNum);
 
+    appLog(
+      "INFO",
+      "queue",
+      "call_queue",
+      "Queue called to counter",
+      "ONLINE",
+      counter,
+      { service: service, number: foundNum },
+    );
+
     return jsonOut({
       id: foundId,
       number: foundNum,
@@ -574,6 +804,15 @@ function handleCallQueue(request) {
       customer_name: foundCust || "",
     });
   } else {
+    appLog(
+      "WARN",
+      "queue",
+      "call_queue_failed",
+      "No waiting queue for requested service",
+      "ONLINE",
+      counter,
+      { service: service },
+    );
     return jsonOut({
       error: "Tidak ada antrian menunggu untuk layanan " + service,
     });
@@ -593,6 +832,15 @@ function handleSkipQueue(request) {
     for (var i = 1; i < data.length; i++) {
       if (data[i][Q_ID] === skipId) {
         sheet.getRange(i + 1, Q_STATUS + 1).setValue("skipped");
+        appLog(
+          "INFO",
+          "queue",
+          "skip_queue",
+          "Queue marked as skipped",
+          "ONLINE",
+          "system",
+          { id: skipId, service: service },
+        );
         break;
       }
     }
@@ -690,8 +938,8 @@ function ensureSettingsSheetReady() {
     ["resetTime", "00:00", "Jam reset nomor antrian harian (format HH:mm)"],
     [
       "dateFormat",
-      "LONG_ID",
-      "Format tanggal tampilan (LONG_ID | DD/MM/YYYY | MM/DD/YYYY | YYYY-MM-DD)",
+      "DD MMMM YYYY",
+      "Format tanggal tampilan (DD MMMM YYYY | DD/MM/YYYY | MM/DD/YYYY | YYYY-MM-DD)",
     ],
     [
       "youtubeUrl",
@@ -752,9 +1000,18 @@ function handleGetConfig() {
     var key = data[i][0];
     var value = data[i][1];
     if (key) {
-      if (value === "true") config[key] = true;
-      else if (value === "false") config[key] = false;
-      else config[key] = value;
+      if (value instanceof Date) {
+        // GAS auto-parses time cells (e.g. "00:00") as Date objects—convert back to HH:MM string
+        var hh = String(value.getHours()).padStart(2, "0");
+        var mm = String(value.getMinutes()).padStart(2, "0");
+        config[key] = hh + ":" + mm;
+      } else if (value === "true") {
+        config[key] = true;
+      } else if (value === "false") {
+        config[key] = false;
+      } else {
+        config[key] = value;
+      }
     }
   }
 
@@ -786,7 +1043,164 @@ function handleSetConfig(request) {
     }
   }
 
+  appLog(
+    "INFO",
+    "config",
+    "set_config",
+    "Configuration updated",
+    "ONLINE",
+    "system",
+    { keyCount: keys.length, keys: keys },
+  );
+
   return jsonOut({ success: true });
+}
+
+function handleHealth() {
+  return jsonOut({
+    success: true,
+    status: "ONLINE",
+    serverTime: new Date().toISOString(),
+  });
+}
+
+function handleLogEvent(request) {
+  var level = (request.level || "INFO").toUpperCase();
+  var moduleName = request.module || "frontend";
+  var eventName = request.event || "client_event";
+  var message = request.message || "No message";
+  var connectionStatus = request.connectionStatus || "UNKNOWN";
+  var actor = request.actor || "anonymous";
+  var path = request.path || "";
+  var details = request.details || {};
+  var requestId = request.requestId || "";
+
+  appLog(level, moduleName, eventName, message, connectionStatus, actor, {
+    path: path,
+    details: {
+      requestId: requestId,
+      payload: details,
+    },
+  });
+
+  return jsonOut({ success: true });
+}
+
+function handleGetLogs(params) {
+  params = params || {};
+  var limit = parseInt(params.limit, 10);
+  if (isNaN(limit) || limit <= 0) limit = 100;
+  if (limit > 500) limit = 500;
+
+  var levelFilter = params.level ? String(params.level).toUpperCase() : "";
+  var moduleFilter = params.module ? String(params.module).toLowerCase() : "";
+  var statusFilter = params.status ? String(params.status).toUpperCase() : "";
+  var query = params.q ? String(params.q).toLowerCase() : "";
+
+  var sheet = ensureLogsSheetReady();
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+
+  for (var i = data.length - 1; i >= 1 && result.length < limit; i--) {
+    var level = String(data[i][1] || "").toUpperCase();
+    var moduleName = String(data[i][2] || "").toLowerCase();
+    var eventName = String(data[i][3] || "").toLowerCase();
+    var message = String(data[i][4] || "").toLowerCase();
+    var connStatus = String(data[i][5] || "").toUpperCase();
+    var actor = String(data[i][6] || "").toLowerCase();
+    var path = String(data[i][7] || "").toLowerCase();
+    var detailsJson = String(data[i][8] || "").toLowerCase();
+
+    if (levelFilter && level !== levelFilter) continue;
+    if (moduleFilter && moduleName !== moduleFilter) continue;
+    if (statusFilter && connStatus !== statusFilter) continue;
+
+    if (query) {
+      var searchable =
+        level +
+        " " +
+        moduleName +
+        " " +
+        eventName +
+        " " +
+        message +
+        " " +
+        actor +
+        " " +
+        path +
+        " " +
+        detailsJson;
+      if (searchable.indexOf(query) === -1) continue;
+    }
+
+    result.push({
+      timestamp: data[i][0],
+      level: data[i][1],
+      module: data[i][2],
+      event: data[i][3],
+      message: data[i][4],
+      connection_status: data[i][5],
+      actor: data[i][6],
+      path: data[i][7],
+      details_json: data[i][8],
+    });
+  }
+
+  return jsonOut(result);
+}
+
+function handleClearLogs(request) {
+  var actor = (request && request.actor) || "system";
+  var sheet = ensureLogsSheetReady();
+
+  clearDataRows(sheet);
+
+  // Keep one audit record after clear operation.
+  appLog(
+    "WARN",
+    "maintenance",
+    "clear_logs",
+    "All logs cleared by administrator",
+    "ONLINE",
+    actor,
+    {},
+  );
+
+  return jsonOut({ success: true, message: "Logs berhasil dihapus." });
+}
+
+function handleResetQueueData(request) {
+  var actor = (request && request.actor) || "system";
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var queuesSheet = ss.getSheetByName("queues");
+  var countersSheet = ss.getSheetByName("counters");
+
+  if (!queuesSheet || !countersSheet) {
+    return jsonOut({
+      error:
+        "Sheet queues/counters tidak ditemukan. Jalankan init_sheets terlebih dahulu.",
+    });
+  }
+
+  var queueRows = clearDataRows(queuesSheet);
+  var counterRows = clearDataRows(countersSheet);
+
+  appLog(
+    "WARN",
+    "maintenance",
+    "reset_queue_data",
+    "Queue and counter data reset",
+    "ONLINE",
+    actor,
+    { queueRowsDeleted: queueRows, counterRowsDeleted: counterRows },
+  );
+
+  return jsonOut({
+    success: true,
+    message: "Data antrean berhasil direset.",
+    queueRowsDeleted: queueRows,
+    counterRowsDeleted: counterRows,
+  });
 }
 
 // =============================================================
@@ -877,6 +1291,72 @@ function updateCounterLastCalled(counterName, service, number) {
       new Date(),
     ]);
   }
+}
+
+function safeJsonString(value) {
+  try {
+    return JSON.stringify(value || {});
+  } catch (e) {
+    return JSON.stringify({ serialization_error: String(e.message || e) });
+  }
+}
+
+function appLog(
+  level,
+  moduleName,
+  eventName,
+  message,
+  connectionStatus,
+  actor,
+  details,
+) {
+  try {
+    var sheet = ensureLogsSheetReady();
+    var detailObj = details || {};
+    var pathValue = detailObj.path || "";
+    var detailString = safeJsonString(detailObj.details || detailObj);
+    if (detailString.length > 49000) {
+      detailString = detailString.substring(0, 49000) + "...(truncated)";
+    }
+
+    sheet.appendRow([
+      new Date().toISOString(),
+      level || "INFO",
+      moduleName || "app",
+      eventName || "event",
+      message || "",
+      connectionStatus || "UNKNOWN",
+      actor || "system",
+      pathValue,
+      detailString,
+    ]);
+
+    trimLogsIfNeeded(sheet);
+  } catch (e) {
+    // Never throw from logger to avoid blocking main request path.
+  }
+}
+
+function trimLogsIfNeeded(sheet) {
+  try {
+    var currentRows = sheet.getLastRow();
+    var dataRows = Math.max(0, currentRows - 1); // exclude header
+    if (dataRows <= LOGS_MAX_ROWS) return;
+
+    var toDelete = Math.min(dataRows - LOGS_MAX_ROWS, LOGS_PRUNE_BATCH);
+    // Delete oldest log rows first, preserving header row
+    sheet.deleteRows(2, toDelete);
+  } catch (e) {
+    // Never throw from retention to avoid blocking main request path.
+  }
+}
+
+function clearDataRows(sheet) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return 0;
+  var count = lastRow - 1;
+  sheet.deleteRows(2, count);
+  return count;
 }
 
 function jsonOut(data) {

@@ -228,3 +228,125 @@ export const deleteUser = async (id: string) => {
     body: JSON.stringify({ action: "delete_user", id }),
   });
 };
+
+// ─── pingBackend ─────────────────────────────────────────────────────────────────
+export const pingBackend = async () => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
+    return {
+      success: true,
+      status: "ONLINE",
+      serverTime: new Date().toISOString(),
+    };
+  }
+
+  const response = await fetch(
+    `${GAS_WEB_APP_URL}?action=health&_t=${Date.now()}`,
+    { cache: "no-store" },
+  );
+  const data = await response.json();
+  if (!data?.success) {
+    throw new Error(data?.error || "Health check failed");
+  }
+  return data;
+};
+
+// ─── logEvent ────────────────────────────────────────────────────────────────────
+export const logEvent = async (payload: {
+  level?: "INFO" | "WARN" | "ERROR";
+  module?: string;
+  event: string;
+  message: string;
+  connectionStatus?: "ONLINE" | "OFFLINE" | "BACKEND_UNREACHABLE" | "UNKNOWN";
+  actor?: string;
+  path?: string;
+  details?: Record<string, unknown>;
+}) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return { success: true };
+
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // no-cors is enough for fire-and-forget logging and avoids CORS response limitations
+  await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({
+      action: "log_event",
+      level: payload.level || "INFO",
+      module: payload.module || "frontend",
+      event: payload.event,
+      message: payload.message,
+      connectionStatus: payload.connectionStatus || "UNKNOWN",
+      actor: payload.actor || "anonymous",
+      path: payload.path || "",
+      requestId,
+      details: payload.details || {},
+    }),
+  });
+};
+
+// ─── getLogs ─────────────────────────────────────────────────────────────────────
+export type LogRow = {
+  timestamp: string;
+  level: string;
+  module: string;
+  event: string;
+  message: string;
+  connection_status: string;
+  actor: string;
+  path: string;
+  details_json: string;
+};
+
+export const getLogs = async (params?: {
+  limit?: number;
+  level?: string;
+  module?: string;
+  status?: string;
+  q?: string;
+}) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return [] as LogRow[];
+
+  const qs = new URLSearchParams({
+    action: "get_logs",
+    _t: String(Date.now()),
+  });
+
+  if (params?.limit) qs.set("limit", String(params.limit));
+  if (params?.level) qs.set("level", params.level);
+  if (params?.module) qs.set("module", params.module);
+  if (params?.status) qs.set("status", params.status);
+  if (params?.q) qs.set("q", params.q);
+
+  const response = await fetch(`${GAS_WEB_APP_URL}?${qs.toString()}`, {
+    cache: "no-store",
+  });
+  return response.json();
+};
+
+// ─── clearLogs ───────────────────────────────────────────────────────────────────
+export const clearLogs = async (actor?: string) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return { success: true };
+
+  const response = await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "clear_logs", actor: actor || "system" }),
+  });
+  return response.json();
+};
+
+// ─── resetQueueData ──────────────────────────────────────────────────────────────
+export const resetQueueData = async (actor?: string) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return { success: true };
+
+  const response = await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({
+      action: "reset_queue_data",
+      actor: actor || "system",
+    }),
+  });
+  return response.json();
+};
