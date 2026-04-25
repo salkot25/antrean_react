@@ -4,7 +4,18 @@
 // Sheet: queues   → A:id | B:number | C:service | D:customer_name | E:status | F:created_at | G:called_at | H:counter | I:date
 // Sheet: counters → A:id | B:name   | C:service | D:last_called_number | E:last_called_at
 // Sheet: settings → A:key | B:value | C:description
+// Sheet: users    → A:id | B:username | C:fullName | D:email | E:role | F:status | G:passwordHash | H:lastLogin
 // =============================================================
+
+// Column index constants for 'users' sheet (0-based)
+var U_ID = 0;
+var U_USERNAME = 1;
+var U_FULLNAME = 2;
+var U_EMAIL = 3;
+var U_ROLE = 4;
+var U_STATUS = 5;
+var U_PASSHASH = 6;
+var U_LASTLOGIN = 7;
 
 // Column index constants for 'queues' sheet (1-based for getRange, 0-based for array access)
 var Q_ID = 0; // A
@@ -46,6 +57,14 @@ function doPost(e) {
       return handleSetConfig(request);
     } else if (action === "init_sheets") {
       return handleInitSheets();
+    } else if (action === "login") {
+      return handleLogin(request);
+    } else if (action === "create_user") {
+      return handleCreateUser(request);
+    } else if (action === "update_user") {
+      return handleUpdateUser(request);
+    } else if (action === "delete_user") {
+      return handleDeleteUser(request);
     }
 
     return jsonOut({ error: "Invalid action: " + action });
@@ -68,6 +87,8 @@ function doGet(e) {
       return handleGetConfig();
     } else if (action === "init_sheets") {
       return handleInitSheets();
+    } else if (action === "get_users") {
+      return handleGetUsers();
     }
 
     return jsonOut({ error: "Invalid action: " + action });
@@ -220,6 +241,9 @@ function handleInitSheets() {
     ]);
   }
 
+  // ── users sheet ── (auto-creates with default admin)
+  ensureUsersSheetReady();
+
   return jsonOut({
     success: true,
     message: "Semua sheet berhasil diinisialisasi dengan header.",
@@ -227,8 +251,224 @@ function handleInitSheets() {
 }
 
 // =============================================================
-// Queue Handlers
+// Users Handlers
 // =============================================================
+
+function hashPassword(password) {
+  var bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    password,
+  );
+  return bytes
+    .map(function (b) {
+      return ("0" + (b & 0xff).toString(16)).slice(-2);
+    })
+    .join("");
+}
+
+function ensureUsersSheetReady() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("users");
+
+  if (!sheet) {
+    sheet = ss.insertSheet("users");
+  }
+
+  var firstCell = sheet.getRange(1, 1).getValue();
+  if (!firstCell || firstCell !== "id") {
+    sheet
+      .getRange(1, 1, 1, 8)
+      .setValues([
+        [
+          "id",
+          "username",
+          "fullName",
+          "email",
+          "role",
+          "status",
+          "passwordHash",
+          "lastLogin",
+        ],
+      ]);
+    sheet
+      .getRange(1, 1, 1, 8)
+      .setFontWeight("bold")
+      .setBackground("#004482")
+      .setFontColor("#ffffff");
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 230);
+    sheet.setColumnWidth(2, 120);
+    sheet.setColumnWidth(3, 160);
+    sheet.setColumnWidth(4, 200);
+    sheet.setColumnWidth(5, 100);
+    sheet.setColumnWidth(6, 80);
+    sheet.setColumnWidth(7, 280);
+    sheet.setColumnWidth(8, 160);
+  }
+
+  // Seed default admin if sheet has only the header row
+  var data = sheet.getDataRange().getValues();
+  if (data.length <= 1) {
+    sheet.appendRow([
+      Utilities.getUuid(),
+      "admin",
+      "Administrator",
+      "admin@plnulp.local",
+      "admin",
+      "active",
+      hashPassword("admin123"),
+      "",
+    ]);
+  }
+
+  return sheet;
+}
+
+function handleLogin(request) {
+  var username = (request.username || "").trim();
+  var password = request.password || "";
+
+  if (!username || !password) {
+    return jsonOut({ error: "Username dan password wajib diisi." });
+  }
+
+  var sheet = ensureUsersSheetReady();
+  var data = sheet.getDataRange().getValues();
+  var inputHash = hashPassword(password);
+
+  for (var i = 1; i < data.length; i++) {
+    if (
+      String(data[i][U_USERNAME]).toLowerCase() === username.toLowerCase() &&
+      data[i][U_PASSHASH] === inputHash
+    ) {
+      if (data[i][U_STATUS] !== "active") {
+        return jsonOut({
+          error: "Akun tidak aktif. Hubungi administrator.",
+        });
+      }
+      // Update last login timestamp
+      sheet.getRange(i + 1, U_LASTLOGIN + 1).setValue(new Date());
+      return jsonOut({
+        success: true,
+        user: {
+          id: data[i][U_ID],
+          username: data[i][U_USERNAME],
+          fullName: data[i][U_FULLNAME],
+          email: data[i][U_EMAIL],
+          role: data[i][U_ROLE],
+        },
+      });
+    }
+  }
+
+  return jsonOut({ error: "Username atau password salah." });
+}
+
+function handleGetUsers() {
+  var sheet = ensureUsersSheetReady();
+  var data = sheet.getDataRange().getValues();
+  var users = [];
+
+  for (var i = 1; i < data.length; i++) {
+    var lastLogin = data[i][U_LASTLOGIN];
+    users.push({
+      id: data[i][U_ID],
+      username: data[i][U_USERNAME],
+      fullName: data[i][U_FULLNAME],
+      email: data[i][U_EMAIL],
+      role: data[i][U_ROLE],
+      status: data[i][U_STATUS],
+      lastLogin: lastLogin ? String(lastLogin) : "",
+    });
+  }
+
+  return jsonOut(users);
+}
+
+function handleCreateUser(request) {
+  var username = (request.username || "").trim();
+  if (!username) return jsonOut({ error: "Username wajib diisi." });
+
+  var sheet = ensureUsersSheetReady();
+  var data = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][U_USERNAME]).toLowerCase() === username.toLowerCase()) {
+      return jsonOut({ error: "Username sudah digunakan." });
+    }
+  }
+
+  var id = Utilities.getUuid();
+  var hash = hashPassword(request.password || "changeme123");
+  sheet.appendRow([
+    id,
+    username,
+    request.fullName || "",
+    request.email || "",
+    request.role || "operator",
+    request.status || "active",
+    hash,
+    "",
+  ]);
+
+  return jsonOut({ success: true, id: id });
+}
+
+function handleUpdateUser(request) {
+  if (!request.id) return jsonOut({ error: "ID user wajib diisi." });
+
+  var sheet = ensureUsersSheetReady();
+  var data = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][U_ID] === request.id) {
+      if (request.fullName !== undefined)
+        sheet.getRange(i + 1, U_FULLNAME + 1).setValue(request.fullName);
+      if (request.email !== undefined)
+        sheet.getRange(i + 1, U_EMAIL + 1).setValue(request.email);
+      if (request.role !== undefined)
+        sheet.getRange(i + 1, U_ROLE + 1).setValue(request.role);
+      if (request.status !== undefined)
+        sheet.getRange(i + 1, U_STATUS + 1).setValue(request.status);
+      if (request.password)
+        sheet
+          .getRange(i + 1, U_PASSHASH + 1)
+          .setValue(hashPassword(request.password));
+      return jsonOut({ success: true });
+    }
+  }
+
+  return jsonOut({ error: "User tidak ditemukan." });
+}
+
+function handleDeleteUser(request) {
+  if (!request.id) return jsonOut({ error: "ID user wajib diisi." });
+
+  var sheet = ensureUsersSheetReady();
+  var data = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][U_ID] === request.id) {
+      // Prevent deleting the last admin
+      if (data[i][U_ROLE] === "admin") {
+        var adminCount = 0;
+        for (var j = 1; j < data.length; j++) {
+          if (data[j][U_ROLE] === "admin" && data[j][U_STATUS] === "active")
+            adminCount++;
+        }
+        if (adminCount <= 1) {
+          return jsonOut({
+            error: "Tidak bisa menghapus admin terakhir.",
+          });
+        }
+      }
+      sheet.deleteRow(i + 1);
+      return jsonOut({ success: true });
+    }
+  }
+
+  return jsonOut({ error: "User tidak ditemukan." });
+}
 
 function handleCreateQueue(request) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("queues");

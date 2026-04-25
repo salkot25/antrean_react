@@ -146,3 +146,85 @@ export const updateConfig = async (config: Record<string, any>) => {
   });
   return { success: true };
 };
+
+// ─── loginUser ───────────────────────────────────────────────────────────────────
+// Uses POST without no-cors so we can read the response.
+// GAS Web Apps with text/plain content-type are simple requests and support CORS reads.
+export const loginUser = async (username: string, password: string) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
+    if (username === "admin" && password === "admin123") {
+      return {
+        success: true,
+        user: {
+          id: "mock-id",
+          username: "admin",
+          fullName: "Administrator",
+          email: "admin@plnulp.local",
+          role: "admin",
+        },
+      };
+    }
+    return { error: "Username atau password salah." };
+  }
+
+  const response = await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "login", username, password }),
+  });
+  return response.json();
+};
+
+// ─── getUsers ────────────────────────────────────────────────────────────────────
+export const getUsers = async () => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return [];
+
+  const response = await fetch(
+    `${GAS_WEB_APP_URL}?action=get_users&_t=${Date.now()}`,
+    { cache: "no-store" },
+  );
+  return response.json();
+};
+
+// ─── createUser ──────────────────────────────────────────────────────────────────
+export const createUser = async (user: {
+  username: string;
+  fullName: string;
+  email: string;
+  role: string;
+  status: string;
+  password: string;
+}) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return { success: true };
+
+  await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "create_user", ...user }),
+  });
+};
+
+// ─── updateUser ──────────────────────────────────────────────────────────────────
+export const updateUser = async (id: string, updates: Record<string, any>) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return { success: true };
+
+  await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "update_user", id, ...updates }),
+  });
+};
+
+// ─── deleteUser ──────────────────────────────────────────────────────────────────
+export const deleteUser = async (id: string) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return { success: true };
+
+  await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "delete_user", id }),
+  });
+};

@@ -1,24 +1,43 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import App from './App';
-import DisplayPage from './pages/DisplayPage';
-import AdminPage from './pages/AdminPage';
-import ServiceConfigPage from './pages/ServiceConfigPage';
-import AdminLayout from './components/AdminLayout';
-import './index.css';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import App from "./App";
+import DisplayPage from "./pages/DisplayPage";
+import LoginPage from "./pages/LoginPage";
+import AdminPage from "./pages/AdminPage";
+import DashboardPage from "./pages/DashboardPage";
+import ServiceConfigPage from "./pages/ServiceConfigPage";
+import UserManagementPage from "./pages/UserManagementPage";
+import AdminLayout from "./components/AdminLayout";
+import RequireAuth from "./components/RequireAuth";
+import { AuthProvider } from "./context/AuthContext";
+import "./index.css";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/display" element={<DisplayPage />} />
-        <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/admin/config" element={<ServiceConfigPage />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          {/* Public routes — no auth required */}
+          <Route path="/" element={<App />} />
+          <Route path="/display" element={<DisplayPage />} />
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected admin routes */}
+          <Route element={<RequireAuth />}>
+            <Route element={<AdminLayout />}>
+              <Route
+                path="/admin"
+                element={<Navigate to="/admin/dashboard" replace />}
+              />
+              <Route path="/admin/dashboard" element={<DashboardPage />} />
+              <Route path="/admin/queue" element={<AdminPage />} />
+              <Route path="/admin/config" element={<ServiceConfigPage />} />
+              <Route path="/admin/users" element={<UserManagementPage />} />
+            </Route>
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );
