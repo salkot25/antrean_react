@@ -8,13 +8,13 @@
       var l = window.location;
       l.replace(
         l.protocol +
-          '//' +
+          "//" +
           l.hostname +
-          (l.port ? ':' + l.port : '') +
-          '/?/' +
-          l.pathname.slice(1).replace(/&/g, '~and~') +
-          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-          l.hash
+          (l.port ? ":" + l.port : "") +
+          "/?/" +
+          l.pathname.slice(1).replace(/&/g, "~and~") +
+          (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+          l.hash,
       );
     </script>
   </head>
