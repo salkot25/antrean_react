@@ -6,14 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QMS PLN - Antrian Digital ULP Salatiga</title>
     <script>
-      // GitHub Pages SPA: restore path from redirect query param
-      (function () {
-        var redirect = sessionStorage.redirect;
-        delete sessionStorage.redirect;
-        if (redirect && redirect !== location.href) {
-          history.replaceState(null, null, redirect);
+      // GitHub Pages SPA: decode /?/path back to /path before React Router boots
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function (s) {
+            return s.replace(/~and~/g, '&');
+          }).join('?');
+          window.history.replaceState(null, null, decoded + (l.hash || ''));
         }
-      })();
+      }(window.location));
     </script>
   </head>
   <body>
