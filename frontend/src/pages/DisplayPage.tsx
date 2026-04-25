@@ -12,7 +12,6 @@ export default function DisplayPage() {
     "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan. Pelayanan kami mengutamakan kepuasan Anda.",
   );
   const [officeName, setOfficeName] = useState("PLN Pelayanan Pelanggan");
-  const [dateFormat, setDateFormat] = useState("DD MMMM YYYY");
   const prevDataRef = useRef<Record<string, any>>({});
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -131,7 +130,6 @@ export default function DisplayPage() {
           }
           if (config.runningText) setRunningText(config.runningText);
           if (config.officeName) setOfficeName(config.officeName);
-          if (config.dateFormat) setDateFormat(config.dateFormat);
         }
       } catch (error) {
         console.error("Failed to fetch display config", error);
@@ -218,43 +216,16 @@ export default function DisplayPage() {
   const formattedDateTime = () => {
     const d = currentTime;
 
+    const weekday = d.toLocaleDateString("id-ID", { weekday: "long" });
+    const datePart = d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
     const hours = String(d.getHours()).padStart(2, "0");
     const minutes = String(d.getMinutes()).padStart(2, "0");
-    const tzName =
-      d
-        .toLocaleTimeString("id-ID", { timeZoneName: "short" })
-        .split(" ")
-        .pop() ?? "WIB";
-    const timeStr = `${hours}.${minutes} ${tzName}`;
 
-    if (dateFormat === "DD MMMM YYYY") {
-      const datePart = d.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      return `${datePart} | ${timeStr}`;
-    }
-
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = String(d.getFullYear());
-
-    let dateStr: string;
-    switch (dateFormat) {
-      case "MM/DD/YYYY":
-        dateStr = `${month}/${day}/${year}`;
-        break;
-      case "YYYY-MM-DD":
-        dateStr = `${year}-${month}-${day}`;
-        break;
-      default:
-        dateStr = `${day}/${month}/${year}`;
-        break;
-    }
-
-    const weekday = d.toLocaleDateString("id-ID", { weekday: "long" });
-    return `${weekday}, ${dateStr} | ${timeStr}`;
+    return `${weekday}, ${datePart} | ${hours}.${minutes} WIB`;
   };
 
   const getServiceStyles = (service: string) => {
