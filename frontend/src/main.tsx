@@ -17,7 +17,7 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter basename="/antrean_react">
+    <BrowserRouter basename="/">
       <AuthProvider>
         <ConnectionLogger />
         <Routes>
