@@ -11,11 +11,7 @@ export const createQueue = async (service: string, customerName?: string) => {
   }
 
   // Use GET with query params to actually read the response (no-cors POST blocks response reading)
-  const params = new URLSearchParams({
-    action: "create_get",
-    service,
-    customerName: customerName || "",
-  });
+  // (params variable removed — not used in actual fetch call)
 
   // Fallback: POST no-cors (response unreadable, but writes data)
   await fetch(GAS_WEB_APP_URL, {
