@@ -58,31 +58,58 @@ export default function AdminPage() {
   const fetchQueues = async () => {
     setLoading(true);
     try {
-      const [data, displayData] = await Promise.all([
-        getWaitingQueues(service),
-        getDisplayData(),
-      ]);
+      const data = await getWaitingQueues(service);
       setQueues(data || []);
       setLastRefreshed(new Date());
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
 
-      // Restore lastCalled from backend display data so it survives page refresh
+    // Restore lastCalled from backend separately — failure here must not block queue list
+    try {
+      const displayData = await getDisplayData();
       if (displayData && typeof displayData === "object") {
-        let candidate: { number: string; service: string; counter: string; called_at: string } | null = null;
+        let candidate: {
+          number: string;
+          service: string;
+          counter: string;
+          called_at: string;
+        } | null = null;
 
         if (service) {
-          // Specific service selected — look up its counter directly
           const counterName = SERVICE_TO_COUNTER[service];
           const entry = counterName ? (displayData as any)[counterName] : null;
           if (entry && entry.number && entry.number !== "--") {
-            candidate = { number: entry.number, service, counter: counterName, called_at: entry.called_at || "" };
+            candidate = {
+              number: entry.number,
+              service,
+              counter: counterName,
+              called_at: entry.called_at || "",
+            };
           }
         } else {
-          // "Semua Layanan" — pick the most recently called counter
-          for (const [counterName, entry] of Object.entries(displayData as Record<string, any>)) {
+          for (const [counterName, entry] of Object.entries(
+            displayData as Record<string, any>,
+          )) {
             if (!entry.number || entry.number === "--") continue;
-            const svcCode = Object.entries(SERVICE_TO_COUNTER).find(([, v]) => v === counterName)?.[0] || entry.service || "";
-            if (!candidate || (entry.called_at && entry.called_at > candidate.called_at)) {
-              candidate = { number: entry.number, service: svcCode, counter: counterName, called_at: entry.called_at || "" };
+            const svcCode =
+              Object.entries(SERVICE_TO_COUNTER).find(
+                ([, v]) => v === counterName,
+              )?.[0] ||
+              entry.service ||
+              "";
+            if (
+              !candidate ||
+              (entry.called_at && entry.called_at > candidate.called_at)
+            ) {
+              candidate = {
+                number: entry.number,
+                service: svcCode,
+                counter: counterName,
+                called_at: entry.called_at || "",
+              };
             }
           }
         }
@@ -91,10 +118,8 @@ export default function AdminPage() {
           setLastCalled(candidate);
         }
       }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+    } catch (displayError) {
+      console.error("Failed to fetch display data for lastCalled", displayError);
     }
   };
 
