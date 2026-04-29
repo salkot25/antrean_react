@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [service, setService] = useState("");
   const [lastCalled, setLastCalled] = useState<any>(null);
   const [ttsConfig, setTtsConfig] = useState<TTSConfig>({});
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   useEffect(() => {
     const fetchTtsConfig = async () => {
@@ -51,6 +52,7 @@ export default function AdminPage() {
     try {
       const data = await getWaitingQueues(service);
       setQueues(data || []);
+      setLastRefreshed(new Date());
     } catch (error) {
       console.error(error);
     } finally {
@@ -60,7 +62,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchQueues();
-    const interval = setInterval(fetchQueues, 5000); // Polling every 5s
+    const interval = setInterval(fetchQueues, 5 * 60 * 1000); // Auto-refresh every 5 minutes
     return () => clearInterval(interval);
   }, [service]);
 
@@ -134,7 +136,9 @@ export default function AdminPage() {
       {/* Header & Counter Selection */}
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21]">Queue Control</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21]">
+            Queue Control
+          </h1>
           <p className="text-sm sm:text-base text-slate-500 mt-1">
             Manage active customer queues and service flows.
           </p>
@@ -198,7 +202,9 @@ export default function AdminPage() {
             className="flex-1 bg-[#004482] hover:bg-[#005bac] text-white rounded-xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] border border-blue-900 disabled:opacity-50 disabled:active:scale-100"
           >
             <SkipForward size={40} />
-            <span className="text-xl sm:text-2xl font-semibold">Panggil Berikutnya</span>
+            <span className="text-xl sm:text-2xl font-semibold">
+              Panggil Berikutnya
+            </span>
             <span className="text-sm text-blue-200">
               {queues.length > 0 ? `${queues[0].number} Menunggu` : "Kosong"}
             </span>
@@ -238,9 +244,15 @@ export default function AdminPage() {
             <button
               onClick={fetchQueues}
               className="text-slate-500 hover:text-[#005BAC] transition-colors p-2"
+              title="Refresh data antrian"
             >
               <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
             </button>
+            {lastRefreshed && (
+              <span className="hidden sm:block text-xs text-slate-400">
+                {lastRefreshed.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+            )}
             <span className="inline-flex items-center gap-2 bg-slate-200 px-3 py-1 rounded-full text-sm font-medium text-slate-700">
               <Users size={16} /> {queues.length} Menunggu
             </span>
@@ -304,7 +316,9 @@ export default function AdminPage() {
                           {q.status}
                         </span>
                       </td>
-                      <td className="hidden sm:table-cell py-4 px-6 text-slate-500">{timeStr}</td>
+                      <td className="hidden sm:table-cell py-4 px-6 text-slate-500">
+                        {timeStr}
+                      </td>
                     </tr>
                   );
                 })
