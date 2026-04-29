@@ -21,6 +21,11 @@ export default function ServiceConfigPage() {
     "https://www.youtube.com/watch?v=DHua0l0Hhu4",
   );
   const [autoPrint, setAutoPrint] = useState(true);
+  const [printMode, setPrintMode] = useState("auto");
+  const [printTimeoutMs, setPrintTimeoutMs] = useState(6000);
+  const [printRetryCount, setPrintRetryCount] = useState(1);
+  const [printerConnectionType, setPrinterConnectionType] =
+    useState("bluetooth_spp");
   const [ttsVoiceUri, setTtsVoiceUri] = useState("");
   const [ttsPitch, setTtsPitch] = useState(1);
   const [ttsRate, setTtsRate] = useState(0.8);
@@ -57,6 +62,13 @@ export default function ServiceConfigPage() {
         if (data.dateFormat !== undefined) setDateFormat(data.dateFormat);
         if (data.youtubeUrl !== undefined) setYoutubeUrl(data.youtubeUrl);
         if (data.autoPrint !== undefined) setAutoPrint(data.autoPrint);
+        if (data.printMode !== undefined) setPrintMode(String(data.printMode));
+        if (data.printTimeoutMs !== undefined)
+          setPrintTimeoutMs(Number(data.printTimeoutMs));
+        if (data.printRetryCount !== undefined)
+          setPrintRetryCount(Number(data.printRetryCount));
+        if (data.printerConnectionType !== undefined)
+          setPrinterConnectionType(String(data.printerConnectionType));
         if (data.ttsVoiceUri !== undefined) setTtsVoiceUri(data.ttsVoiceUri);
         if (data.ttsPitch !== undefined) setTtsPitch(Number(data.ttsPitch));
         if (data.ttsRate !== undefined) setTtsRate(Number(data.ttsRate));
@@ -92,6 +104,10 @@ export default function ServiceConfigPage() {
         dateFormat,
         youtubeUrl,
         autoPrint,
+        printMode,
+        printTimeoutMs,
+        printRetryCount,
+        printerConnectionType,
         ttsVoiceUri,
         ttsPitch,
         ttsRate,
@@ -369,6 +385,86 @@ export default function ServiceConfigPage() {
                     </span>
                   </div>
                 </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-sm mt-sm">
+                  <div>
+                    <label className="block font-label-sm text-on-surface-variant mb-base">
+                      Mode Cetak
+                    </label>
+                    <select
+                      value={printMode}
+                      onChange={(e) => setPrintMode(e.target.value)}
+                      className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
+                    >
+                      <option value="auto">
+                        Auto (Bridge lalu fallback browser)
+                      </option>
+                      <option value="bridge">
+                        Bridge Only (Android kiosk)
+                      </option>
+                      <option value="browser">Browser Only</option>
+                    </select>
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Disarankan Auto untuk transisi bertahap ke Android bridge.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block font-label-sm text-on-surface-variant mb-base">
+                      Tipe Koneksi Printer
+                    </label>
+                    <select
+                      value={printerConnectionType}
+                      onChange={(e) => setPrinterConnectionType(e.target.value)}
+                      className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
+                    >
+                      <option value="bluetooth_spp">
+                        Bluetooth SPP (BP-LITE58)
+                      </option>
+                      <option value="bluetooth_ble">Bluetooth BLE</option>
+                      <option value="network">Network / LAN</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-sm mt-sm">
+                  <div>
+                    <label className="block font-label-sm text-on-surface-variant mb-base">
+                      Timeout Cetak (ms)
+                    </label>
+                    <input
+                      type="number"
+                      min={1000}
+                      max={30000}
+                      step={500}
+                      value={printTimeoutMs}
+                      onChange={(e) =>
+                        setPrintTimeoutMs(Number(e.target.value))
+                      }
+                      className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-label-sm text-on-surface-variant mb-base">
+                      Retry Cetak
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={3}
+                      step={1}
+                      value={printRetryCount}
+                      onChange={(e) =>
+                        setPrintRetryCount(Number(e.target.value))
+                      }
+                      className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
+                    />
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Jumlah percobaan ulang saat bridge print gagal.
+                    </p>
+                  </div>
+                </div>
               </div>
             </section>
           </div>

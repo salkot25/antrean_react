@@ -947,6 +947,18 @@ function ensureSettingsSheetReady() {
       "URL video YouTube untuk TV Display",
     ],
     ["autoPrint", "true", "Otomatis print tiket di Kiosk (true/false)"],
+    ["printMode", "auto", "Mode cetak kiosk (auto | bridge | browser)"],
+    [
+      "printTimeoutMs",
+      "6000",
+      "Batas waktu tunggu hasil print bridge dalam milidetik",
+    ],
+    ["printRetryCount", "1", "Jumlah retry saat print bridge gagal (0-3)"],
+    [
+      "printerConnectionType",
+      "bluetooth_spp",
+      "Jenis koneksi printer (bluetooth_spp | bluetooth_ble | network)",
+    ],
     ["ttsVoiceUri", "", "Voice URI untuk Text-to-Speech"],
     ["ttsPitch", "1", "Intonasi suara TTS (0-2)"],
     ["ttsRate", "0.8", "Kecepatan bicara TTS (0.5-2)"],

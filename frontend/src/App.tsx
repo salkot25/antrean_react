@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { createQueue, getConfig } from "./api";
+import { createQueue, getConfig, logEvent } from "./api";
+import {
+  browserPrint,
+  requestBridgePrint,
+  type BridgePrintResult,
+  type TicketPrintPayload,
+} from "./utils/printBridge";
 import {
   Printer,
   Smartphone,
@@ -56,6 +62,10 @@ export default function App() {
   const [countdown, setCountdown] = useState(5);
   const [printedAt, setPrintedAt] = useState("");
   const [autoPrint, setAutoPrint] = useState(true);
+  const [printMode, setPrintMode] = useState("auto");
+  const [printTimeoutMs, setPrintTimeoutMs] = useState(6000);
+  const [printRetryCount, setPrintRetryCount] = useState(1);
+  const [officeName, setOfficeName] = useState("PLN ULP Salatiga");
   const [lastPrinted, setLastPrinted] = useState<LastPrintedTicket | null>(
     null,
   );
@@ -83,12 +93,180 @@ export default function App() {
         const enabled =
           typeof raw === "boolean" ? raw : String(raw).toLowerCase() === "true";
         setAutoPrint(enabled);
+        if (config?.printMode) {
+          setPrintMode(String(config.printMode));
+        }
+        if (config?.printTimeoutMs !== undefined) {
+          const timeout = Number(config.printTimeoutMs);
+          if (Number.isFinite(timeout) && timeout >= 1000 && timeout <= 30000) {
+            setPrintTimeoutMs(timeout);
+          }
+        }
+        if (config?.printRetryCount !== undefined) {
+          const retry = Number(config.printRetryCount);
+          if (Number.isFinite(retry) && retry >= 0 && retry <= 3) {
+            setPrintRetryCount(retry);
+          }
+        }
+        if (config?.officeName) {
+          setOfficeName(String(config.officeName));
+        }
       } catch {
         // Keep default true if config fetch fails
       }
     };
     loadPrintSetting();
   }, []);
+
+  const logPrintEvent = (payload: {
+    level?: "INFO" | "WARN" | "ERROR";
+    event: string;
+    message: string;
+    details?: Record<string, unknown>;
+  }) => {
+    void logEvent({
+      level: payload.level,
+      module: "kiosk-print",
+      event: payload.event,
+      message: payload.message,
+      connectionStatus: navigator.onLine ? "ONLINE" : "OFFLINE",
+      actor: "kiosk",
+      path: window.location.pathname,
+      details: payload.details,
+    }).catch(() => {});
+  };
+
+  const buildTicketPrintPayload = (
+    data: LastPrintedTicket,
+  ): TicketPrintPayload => {
+    const svc = getService(data.service);
+    return {
+      number: data.number,
+      serviceCode: data.service,
+      serviceName: svc?.name || data.service,
+      printedAt: data.printedAt,
+      customerName: data.customerName,
+      officeName,
+      html: document.getElementById("thermal-print")?.innerHTML,
+    };
+  };
+
+  const dispatchPrint = async (
+    data: LastPrintedTicket,
+    trigger: "auto_print" | "manual_print" | "reprint_last",
+  ) => {
+    const payload = buildTicketPrintPayload(data);
+    const isBrowserOnlyMode = printMode === "browser";
+    const maxAttempts = 1 + printRetryCount;
+
+    logPrintEvent({
+      event: "print_requested",
+      message: "Print tiket diminta dari kiosk",
+      details: {
+        trigger,
+        printMode,
+        maxAttempts,
+        ticketNumber: data.number,
+        service: data.service,
+      },
+    });
+
+    if (isBrowserOnlyMode) {
+      const fallbackResult = browserPrint();
+      logPrintEvent({
+        event: "print_fallback_used",
+        message: "Browser print digunakan (mode browser)",
+        details: {
+          trigger,
+          mode: fallbackResult.mode,
+          status: fallbackResult.status,
+          ticketNumber: data.number,
+          service: data.service,
+        },
+      });
+      return;
+    }
+
+    let bridgeResult: BridgePrintResult = {
+      status: "unsupported",
+      mode: "bridge",
+      reason: "bridge_not_attempted",
+    };
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      bridgeResult = await requestBridgePrint(payload, printTimeoutMs);
+      if (bridgeResult.status === "success") {
+        logPrintEvent({
+          event: "print_success",
+          message: "Print tiket berhasil via Android bridge",
+          details: {
+            trigger,
+            mode: "bridge",
+            attempt,
+            ticketNumber: data.number,
+            service: data.service,
+          },
+        });
+        return;
+      }
+
+      if (attempt < maxAttempts) {
+        logPrintEvent({
+          level: "WARN",
+          event: "print_bridge_retry",
+          message: "Print bridge gagal, mencoba ulang",
+          details: {
+            trigger,
+            mode: "bridge",
+            attempt,
+            nextAttempt: attempt + 1,
+            status: bridgeResult.status,
+            reason: bridgeResult.reason || "unknown",
+            ticketNumber: data.number,
+            service: data.service,
+          },
+        });
+      }
+    }
+
+    logPrintEvent({
+      level: bridgeResult.status === "unsupported" ? "INFO" : "WARN",
+      event: "print_bridge_failed",
+      message:
+        "Android bridge tidak tersedia atau gagal, fallback ke browser print",
+      details: {
+        trigger,
+        mode: "bridge",
+        maxAttempts,
+        status: bridgeResult.status,
+        reason: bridgeResult.reason || "unknown",
+        ticketNumber: data.number,
+        service: data.service,
+      },
+    });
+
+    const fallbackResult = browserPrint();
+    logPrintEvent({
+      event: "print_fallback_used",
+      message: "Browser print digunakan sebagai fallback",
+      details: {
+        trigger,
+        mode: fallbackResult.mode,
+        status: fallbackResult.status,
+        ticketNumber: data.number,
+        service: data.service,
+      },
+    });
+  };
+
+  const schedulePrint = (
+    data: LastPrintedTicket,
+    trigger: "auto_print" | "manual_print" | "reprint_last",
+  ) => {
+    setTimeout(() => {
+      void dispatchPrint(data, trigger);
+    }, 800);
+  };
 
   // Auto redirect countdown on success page
   useEffect(() => {
@@ -156,7 +334,7 @@ export default function App() {
 
       // Auto print follows Service Config (autoPrint)
       if (autoPrint) {
-        setTimeout(() => window.print(), 800);
+        schedulePrint(latest, "auto_print");
       }
     } catch (err) {
       console.error(err);
@@ -173,7 +351,20 @@ export default function App() {
     setCustomerName(lastPrinted.customerName || "");
     setCountdown(5);
     setAppState("success");
-    setTimeout(() => window.print(), 800);
+    schedulePrint(lastPrinted, "reprint_last");
+  };
+
+  const handleManualPrint = () => {
+    if (!ticket) return;
+    schedulePrint(
+      {
+        number: ticket.number,
+        service: ticket.service,
+        printedAt,
+        customerName,
+      },
+      "manual_print",
+    );
   };
 
   const svc = selectedService ? getService(selectedService) : null;
@@ -226,7 +417,7 @@ export default function App() {
 
           <div className="w-full max-w-xs flex flex-col gap-3">
             <button
-              onClick={() => window.print()}
+              onClick={handleManualPrint}
               className="w-full bg-[#002e5b] text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-[#004482] active:scale-95 transition-all"
             >
               <Printer size={20} /> Cetak Ulang
