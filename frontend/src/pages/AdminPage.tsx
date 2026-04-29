@@ -3,6 +3,7 @@ import {
   getWaitingQueues,
   callNextQueue,
   getConfig,
+  getDisplayData,
   resetQueueData,
 } from "../api";
 import { speakQueue } from "../utils/tts";
@@ -47,12 +48,49 @@ export default function AdminPage() {
     fetchTtsConfig();
   }, []);
 
+  // Map service code to loket counter name (must match handleCall logic)
+  const SERVICE_TO_COUNTER: Record<string, string> = {
+    CS: "Loket Customer Service",
+    PLN: "Loket PLN Mobile Experience",
+    CC: "Loket Customer Care",
+  };
+
   const fetchQueues = async () => {
     setLoading(true);
     try {
-      const data = await getWaitingQueues(service);
+      const [data, displayData] = await Promise.all([
+        getWaitingQueues(service),
+        getDisplayData(),
+      ]);
       setQueues(data || []);
       setLastRefreshed(new Date());
+
+      // Restore lastCalled from backend display data so it survives page refresh
+      if (displayData && typeof displayData === "object") {
+        let candidate: { number: string; service: string; counter: string; called_at: string } | null = null;
+
+        if (service) {
+          // Specific service selected — look up its counter directly
+          const counterName = SERVICE_TO_COUNTER[service];
+          const entry = counterName ? (displayData as any)[counterName] : null;
+          if (entry && entry.number && entry.number !== "--") {
+            candidate = { number: entry.number, service, counter: counterName, called_at: entry.called_at || "" };
+          }
+        } else {
+          // "Semua Layanan" — pick the most recently called counter
+          for (const [counterName, entry] of Object.entries(displayData as Record<string, any>)) {
+            if (!entry.number || entry.number === "--") continue;
+            const svcCode = Object.entries(SERVICE_TO_COUNTER).find(([, v]) => v === counterName)?.[0] || entry.service || "";
+            if (!candidate || (entry.called_at && entry.called_at > candidate.called_at)) {
+              candidate = { number: entry.number, service: svcCode, counter: counterName, called_at: entry.called_at || "" };
+            }
+          }
+        }
+
+        if (candidate) {
+          setLastCalled(candidate);
+        }
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -250,7 +288,11 @@ export default function AdminPage() {
             </button>
             {lastRefreshed && (
               <span className="hidden sm:block text-xs text-slate-400">
-                {lastRefreshed.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                {lastRefreshed.toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
               </span>
             )}
             <span className="inline-flex items-center gap-2 bg-slate-200 px-3 py-1 rounded-full text-sm font-medium text-slate-700">
