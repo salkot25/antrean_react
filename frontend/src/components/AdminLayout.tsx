@@ -8,6 +8,8 @@ import {
   Users,
   ShieldCheck,
   ScrollText,
+  Menu,
+  X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getConfig } from "../api";
@@ -16,6 +18,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navItems = [
     { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
@@ -50,8 +53,40 @@ export default function AdminLayout() {
 
   return (
     <div className="bg-[#F5F7FA] text-[#191c21] font-['Inter'] h-screen w-full flex overflow-hidden">
+      {/* Mobile sidebar toggle */}
+      <button
+        onClick={() => setIsSidebarOpen(true)}
+        className="sm:hidden fixed top-3 left-3 z-[70] inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm"
+        aria-label="Buka menu"
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <button
+          className="sm:hidden fixed inset-0 z-[55] bg-black/30"
+          aria-label="Tutup menu"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SideNavBar */}
-      <nav className="fixed left-0 top-0 h-full w-[280px] bg-slate-50 border-r border-slate-200 flex flex-col py-6 gap-4 z-50">
+      <nav
+        className={`fixed left-0 top-0 h-full w-[280px] bg-slate-50 border-r border-slate-200 flex flex-col py-6 gap-4 z-[60] transition-transform duration-200 sm:translate-x-0 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="sm:hidden px-4 mb-1 flex justify-end">
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-200"
+            aria-label="Tutup menu"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
         {/* Sidebar Logo */}
         <div className="px-6 mb-2 flex items-center gap-3">
           <img
@@ -81,6 +116,7 @@ export default function AdminLayout() {
               <Link
                 key={item.name}
                 to={item.path}
+                onClick={() => setIsSidebarOpen(false)}
                 className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive
                     ? "bg-white text-[#005BAC] shadow-sm border-l-4 border-[#005BAC] scale-[0.98] duration-150"
@@ -125,7 +161,7 @@ export default function AdminLayout() {
       </nav>
 
       {/* Main Content Area */}
-      <main className="ml-[280px] flex-1 h-full overflow-y-auto">
+      <main className="ml-0 sm:ml-[280px] flex-1 h-full overflow-y-auto pt-14 sm:pt-0">
         <Outlet />
       </main>
     </div>
