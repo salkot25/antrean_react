@@ -130,21 +130,21 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="px-10 py-8 flex flex-col gap-8 h-full">
+    <div className="px-4 py-4 sm:px-10 sm:py-8 flex flex-col gap-6 sm:gap-8 h-full">
       {/* Header & Counter Selection */}
-      <header className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
         <div>
-          <h1 className="text-3xl font-bold text-[#191c21]">Queue Control</h1>
-          <p className="text-base text-slate-500 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21]">Queue Control</h1>
+          <p className="text-sm sm:text-base text-slate-500 mt-1">
             Manage active customer queues and service flows.
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
           <button
             onClick={handleResetQueueData}
             disabled={resetting || loading}
-            className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg border border-red-700 transition-all flex items-center gap-2 text-sm font-medium"
+            className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg border border-red-700 transition-all flex items-center justify-center gap-2 text-sm font-medium"
           >
             <RotateCcw size={16} className={resetting ? "animate-spin" : ""} />
             Reset Data Antrian
@@ -165,7 +165,7 @@ export default function AdminPage() {
       {/* Bento Grid: Control Center */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Current Queue Display (Centerpiece) */}
-        <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center p-12 relative overflow-hidden">
+        <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden min-h-[180px] sm:min-h-[300px]">
           {/* Decorative background elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-100/50 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
@@ -178,7 +178,7 @@ export default function AdminPage() {
               </span>
             </div>
 
-            <h2 className="text-[120px] leading-[120px] font-black text-[#004482] tracking-tighter drop-shadow-sm">
+            <h2 className="text-[72px] sm:text-[120px] leading-none font-black text-[#004482] tracking-tighter drop-shadow-sm">
               {lastCalled ? lastCalled.number : "--"}
             </h2>
             <p className="text-xl text-slate-500 mt-4">
@@ -198,7 +198,7 @@ export default function AdminPage() {
             className="flex-1 bg-[#004482] hover:bg-[#005bac] text-white rounded-xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] border border-blue-900 disabled:opacity-50 disabled:active:scale-100"
           >
             <SkipForward size={40} />
-            <span className="text-2xl font-semibold">Panggil Berikutnya</span>
+            <span className="text-xl sm:text-2xl font-semibold">Panggil Berikutnya</span>
             <span className="text-sm text-blue-200">
               {queues.length > 0 ? `${queues[0].number} Menunggu` : "Kosong"}
             </span>
@@ -230,8 +230,8 @@ export default function AdminPage() {
 
       {/* Queue Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col min-h-[300px]">
-        <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <h3 className="text-2xl font-semibold text-[#191c21]">
+        <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <h3 className="text-lg sm:text-2xl font-semibold text-[#191c21]">
             Daftar Antrian
           </h3>
           <div className="flex items-center gap-4">
@@ -251,19 +251,19 @@ export default function AdminPage() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-white border-b border-slate-200 sticky top-0">
               <tr>
-                <th className="py-4 px-6 text-sm text-slate-500 font-semibold">
-                  Nomor Antrian
+                <th className="py-3 px-3 sm:py-4 sm:px-6 text-sm text-slate-500 font-semibold">
+                  No. Antrian
                 </th>
-                <th className="py-4 px-6 text-sm text-slate-500 font-semibold">
-                  Jenis Layanan
+                <th className="py-3 px-3 sm:py-4 sm:px-6 text-sm text-slate-500 font-semibold">
+                  Layanan
                 </th>
-                <th className="py-4 px-6 text-sm text-slate-500 font-semibold">
+                <th className="hidden sm:table-cell py-4 px-6 text-sm text-slate-500 font-semibold">
                   Nama Pelanggan
                 </th>
-                <th className="py-4 px-6 text-sm text-slate-500 font-semibold">
+                <th className="py-3 px-3 sm:py-4 sm:px-6 text-sm text-slate-500 font-semibold">
                   Status
                 </th>
-                <th className="py-4 px-6 text-sm text-slate-500 font-semibold">
+                <th className="hidden sm:table-cell py-4 px-6 text-sm text-slate-500 font-semibold">
                   Waktu Ambil
                 </th>
               </tr>
@@ -282,29 +282,29 @@ export default function AdminPage() {
                       key={idx}
                       className="hover:bg-slate-50 transition-colors"
                     >
-                      <td className="py-4 px-6 font-semibold text-[#004482]">
+                      <td className="py-3 px-3 sm:py-4 sm:px-6 font-semibold text-[#004482]">
                         {q.number}
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-3 px-3 sm:py-4 sm:px-6 text-sm sm:text-base">
                         {q.service === "CS"
                           ? "Customer Service"
                           : q.service === "PLN"
-                            ? "PLN Mobile Experience"
+                            ? "PLN Mobile"
                             : "Customer Care"}
                       </td>
-                      <td className="py-4 px-6 text-slate-600">
+                      <td className="hidden sm:table-cell py-4 px-6 text-slate-600">
                         {q.customer_name || (
                           <span className="text-slate-300 italic text-sm">
                             —
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-3 px-3 sm:py-4 sm:px-6">
                         <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-200 text-slate-600">
                           {q.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-slate-500">{timeStr}</td>
+                      <td className="hidden sm:table-cell py-4 px-6 text-slate-500">{timeStr}</td>
                     </tr>
                   );
                 })
