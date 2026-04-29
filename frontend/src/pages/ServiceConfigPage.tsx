@@ -7,6 +7,7 @@ import {
   Volume2,
   Play,
   Building2,
+  Database,
 } from "lucide-react";
 import { getConfig, updateConfig } from "../api";
 
@@ -31,6 +32,8 @@ export default function ServiceConfigPage() {
   const [ttsRate, setTtsRate] = useState(0.8);
   const [videoVolume, setVideoVolume] = useState(100);
   const [videoVolumeDucked, setVideoVolumeDucked] = useState(15);
+  const [logsAutoCleanup, setLogsAutoCleanup] = useState(false);
+  const [logsRetentionDays, setLogsRetentionDays] = useState(30);
   const [runningText, setRunningText] = useState(
     "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan. Pelayanan kami mengutamakan kepuasan Anda.",
   );
@@ -76,6 +79,17 @@ export default function ServiceConfigPage() {
           setVideoVolume(Number(data.videoVolume));
         if (data.videoVolumeDucked !== undefined)
           setVideoVolumeDucked(Number(data.videoVolumeDucked));
+        if (data.logsAutoCleanup !== undefined)
+          setLogsAutoCleanup(
+            data.logsAutoCleanup === true ||
+              String(data.logsAutoCleanup).toLowerCase() === "true",
+          );
+        if (data.logsRetentionDays !== undefined) {
+          const days = Number(data.logsRetentionDays);
+          if (Number.isFinite(days)) {
+            setLogsRetentionDays(Math.max(1, Math.min(3650, days)));
+          }
+        }
         if (data.runningText !== undefined) setRunningText(data.runningText);
       }
     } catch (error) {
@@ -113,6 +127,8 @@ export default function ServiceConfigPage() {
         ttsRate,
         videoVolume,
         videoVolumeDucked,
+        logsAutoCleanup,
+        logsRetentionDays,
         runningText,
       });
 
@@ -232,6 +248,62 @@ export default function ServiceConfigPage() {
                     </select>
                     <p className="text-xs text-on-surface-variant mt-1">
                       Format tanggal yang digunakan di seluruh tampilan sistem.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-sm border border-outline-variant rounded-lg p-sm bg-surface-container-lowest space-y-sm">
+                  <h3 className="font-label-sm text-on-surface flex items-center gap-2">
+                    <Database size={16} className="text-secondary" />
+                    Retensi Logs
+                  </h3>
+
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <div className="relative flex-shrink-0 mt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={logsAutoCleanup}
+                        onChange={(e) => setLogsAutoCleanup(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div
+                        className="w-10 h-6 bg-surface-container-high rounded-full peer peer-checked:bg-primary transition-colors
+                                      peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-1 after:left-1
+                                      after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform after:shadow-sm"
+                      ></div>
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-label-sm text-on-surface font-semibold block">
+                        Aktifkan Auto Hapus Logs
+                      </span>
+                      <span className="text-xs text-on-surface-variant">
+                        Jika aktif, backend otomatis menghapus data log yang
+                        lebih lama dari batas hari di bawah.
+                      </span>
+                    </div>
+                  </label>
+
+                  <div>
+                    <label className="block font-label-sm text-on-surface-variant mb-base">
+                      Simpan Logs Maksimal (hari)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={3650}
+                      step={1}
+                      value={logsRetentionDays}
+                      onChange={(e) =>
+                        setLogsRetentionDays(
+                          Math.max(1, Math.min(3650, Number(e.target.value) || 1)),
+                        )
+                      }
+                      disabled={!logsAutoCleanup}
+                      className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface disabled:opacity-60"
+                    />
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Hapus manual tetap tersedia dari halaman Logs dengan tombol
+                      "Hapus Logs" (fitur existing).
                     </p>
                   </div>
                 </div>

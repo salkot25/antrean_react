@@ -39,6 +39,9 @@ var C_LAST_AT = 4; // E
 // Logs retention settings
 var LOGS_MAX_ROWS = 10000; // Keep last 10k logs (excluding header)
 var LOGS_PRUNE_BATCH = 500;
+var LOGS_RETENTION_MIN_DAYS = 1;
+var LOGS_RETENTION_MAX_DAYS = 3650;
+var LOGS_CLEANUP_THROTTLE_MS = 60 * 60 * 1000; // run at most once per hour
 
 // =============================================================
 // HTTP Handlers
@@ -49,6 +52,8 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(5000);
+
+    maybeAutoCleanupLogs();
 
     var request = JSON.parse((e.postData && e.postData.contents) || "{}");
     action = request.action || "";
@@ -110,6 +115,8 @@ function doGet(e) {
   var action = (e.parameter && e.parameter.action) || "";
 
   try {
+    maybeAutoCleanupLogs();
+
     if (action === "list") {
       return handleListQueue(e.parameter.service);
     } else if (action === "display") {
@@ -292,6 +299,16 @@ function handleInitSheets() {
       "runningText",
       "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan. Pelayanan kami mengutamakan kepuasan Anda.",
       "Teks berjalan di bagian bawah layar TV Display",
+    ]);
+    settingsSheet.appendRow([
+      "logsAutoCleanup",
+      "false",
+      "Aktifkan penghapusan log otomatis berdasarkan umur data (true/false)",
+    ]);
+    settingsSheet.appendRow([
+      "logsRetentionDays",
+      "30",
+      "Hapus log yang lebih lama dari jumlah hari ini",
     ]);
   }
 
@@ -977,6 +994,16 @@ function ensureSettingsSheetReady() {
       "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan. Pelayanan kami mengutamakan kepuasan Anda.",
       "Teks berjalan di bagian bawah layar TV Display",
     ],
+    [
+      "logsAutoCleanup",
+      "false",
+      "Aktifkan penghapusan log otomatis berdasarkan umur data (true/false)",
+    ],
+    [
+      "logsRetentionDays",
+      "30",
+      "Hapus log yang lebih lama dari jumlah hari ini",
+    ],
   ];
 
   var data = sheet.getDataRange().getValues();
@@ -1369,6 +1396,69 @@ function clearDataRows(sheet) {
   var count = lastRow - 1;
   sheet.deleteRows(2, count);
   return count;
+}
+
+function parseRetentionDays(rawValue, defaultValue) {
+  var parsed = parseInt(rawValue, 10);
+  if (isNaN(parsed)) return defaultValue;
+  if (parsed < LOGS_RETENTION_MIN_DAYS) return LOGS_RETENTION_MIN_DAYS;
+  if (parsed > LOGS_RETENTION_MAX_DAYS) return LOGS_RETENTION_MAX_DAYS;
+  return parsed;
+}
+
+function deleteLogsOlderThanDays(retentionDays) {
+  var sheet = ensureLogsSheetReady();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return 0;
+
+  var cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  var timestamps = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  var deleteCount = 0;
+
+  for (var i = 0; i < timestamps.length; i++) {
+    var rawTs = timestamps[i][0];
+    var tsMs = null;
+
+    if (rawTs instanceof Date) {
+      tsMs = rawTs.getTime();
+    } else {
+      tsMs = Date.parse(String(rawTs || ""));
+    }
+
+    // Stop at first unknown/non-older row to avoid deleting fresh data.
+    if (!isFinite(tsMs) || tsMs >= cutoffMs) break;
+    deleteCount += 1;
+  }
+
+  if (deleteCount > 0) {
+    sheet.deleteRows(2, deleteCount);
+  }
+
+  return deleteCount;
+}
+
+function maybeAutoCleanupLogs() {
+  try {
+    var config = getConfigObj();
+    var enabled = config.logsAutoCleanup === true;
+    if (!enabled) return 0;
+
+    var retentionDays = parseRetentionDays(config.logsRetentionDays, 30);
+    var props = PropertiesService.getScriptProperties();
+    var lastRunMs = parseInt(props.getProperty("logs_cleanup_last_run_ms") || "0", 10);
+    var nowMs = Date.now();
+
+    if (lastRunMs > 0 && nowMs - lastRunMs < LOGS_CLEANUP_THROTTLE_MS) {
+      return 0;
+    }
+
+    var deleted = deleteLogsOlderThanDays(retentionDays);
+    props.setProperty("logs_cleanup_last_run_ms", String(nowMs));
+    return deleted;
+  } catch (e) {
+    // Never throw from maintenance path.
+    return 0;
+  }
 }
 
 function jsonOut(data) {
