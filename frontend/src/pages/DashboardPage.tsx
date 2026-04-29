@@ -209,13 +209,13 @@ export default function DashboardPage() {
   return (
     <div className="bg-background min-h-screen flex flex-col">
       {/* ── TopBar ─────────────────────────────── */}
-      <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-6 bg-white border-b border-surface-variant shadow-sm">
-        <div className="flex items-center gap-3">
-          <Zap size={22} className="text-primary" fill="#002e5b" />
-          <h1 className="font-heading-md text-primary">Dashboard</h1>
+      <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-3 sm:px-6 bg-white border-b border-surface-variant shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <Zap size={22} className="text-primary shrink-0" fill="#002e5b" />
+          <h1 className="font-heading-md text-primary truncate">Dashboard</h1>
         </div>
-        <div className="flex items-center gap-4 text-on-surface-variant">
-          <div className="flex items-center gap-1.5 text-xs text-outline">
+        <div className="flex items-center gap-2 sm:gap-4 text-on-surface-variant shrink-0">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-outline">
             <Clock size={14} />
             <span>
               Diperbarui:{" "}
@@ -225,6 +225,10 @@ export default function DashboardPage() {
                 second: "2-digit",
               })}
             </span>
+          </div>
+          <div className="flex sm:hidden items-center gap-1 text-[10px] text-outline">
+            <Clock size={12} />
+            <span>{lastRefreshed.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</span>
           </div>
           <button
             onClick={fetchData}
@@ -237,12 +241,12 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="flex-1 p-safe-margin space-y-xl">
+      <div className="flex-1 p-4 sm:p-safe-margin space-y-xl">
         {/* ── Summary Cards ──────────────────────── */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
-          <div className="bg-white p-sm rounded-xl shadow-sm border-l-4 border-primary flex items-center gap-md">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Ticket size={22} />
+        <section className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-md">
+          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-primary flex items-center gap-3 sm:gap-md">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Ticket size={20} />
             </div>
             <div>
               <p className="text-[10px] font-bold text-outline uppercase tracking-wider">
@@ -254,9 +258,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-sm rounded-xl shadow-sm border-l-4 border-secondary flex items-center gap-md">
-            <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
-              <UserCheck size={22} />
+          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-secondary flex items-center gap-3 sm:gap-md">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
+              <UserCheck size={20} />
             </div>
             <div>
               <p className="text-[10px] font-bold text-outline uppercase tracking-wider">
@@ -268,9 +272,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-sm rounded-xl shadow-sm border-l-4 border-[#723100] flex items-center gap-md">
-            <div className="w-12 h-12 rounded-lg bg-[#723100]/10 flex items-center justify-center text-[#723100]">
-              <Hourglass size={22} />
+          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-[#723100] flex items-center gap-3 sm:gap-md">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#723100]/10 flex items-center justify-center text-[#723100] shrink-0">
+              <Hourglass size={20} />
             </div>
             <div>
               <p className="text-[10px] font-bold text-outline uppercase tracking-wider">
@@ -282,9 +286,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-sm rounded-xl shadow-sm border-l-4 border-surface-tint flex items-center gap-md">
-            <div className="w-12 h-12 rounded-lg bg-surface-tint/10 flex items-center justify-center text-surface-tint">
-              <Timer size={22} />
+          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-surface-tint flex items-center gap-3 sm:gap-md">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-surface-tint/10 flex items-center justify-center text-surface-tint shrink-0">
+              <Timer size={20} />
             </div>
             <div>
               <p className="text-[10px] font-bold text-outline uppercase tracking-wider">
@@ -354,7 +358,7 @@ export default function DashboardPage() {
 
             {/* Traffic Chart */}
             <div className="bg-white p-xl rounded-xl shadow-sm border border-surface-variant">
-              <div className="flex items-center justify-between mb-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-xl">
                 <div>
                   <h2 className="font-heading-md text-on-surface">
                     Antrean Hari Ini
@@ -363,17 +367,17 @@ export default function DashboardPage() {
                     Distribusi antrian per jam
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-surface-variant text-outline hover:bg-surface-container-low transition-colors">
+                <div className="flex gap-2 flex-wrap">
+                  <button className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-surface-variant text-outline hover:bg-surface-container-low transition-colors">
                     Download CSV
                   </button>
-                  <button className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-primary-container text-white hover:bg-primary transition-colors">
+                  <button className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-primary-container text-white hover:bg-primary transition-colors">
                     Laporan Penuh
                   </button>
                 </div>
               </div>
 
-              <div className="relative h-64 w-full flex items-end justify-between px-md gap-1">
+              <div className="relative h-48 sm:h-64 w-full flex items-end justify-between px-1 sm:px-md gap-0.5 sm:gap-1">
                 {CHART_HOURS.map((bar) => {
                   const now = new Date().getHours();
                   const barHour = parseInt(bar.label.split(":")[0], 10);
@@ -406,7 +410,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <span
-                        className={`text-[9px] font-medium transition-colors ${
+                        className={`hidden sm:block text-[9px] font-medium transition-colors ${
                           isCurrentHour
                             ? "text-primary font-bold"
                             : "text-outline"
