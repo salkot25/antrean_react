@@ -111,8 +111,9 @@ object EscPosEncoder {
         buf += text("Anda dipanggil.")
         buf += text("Terima kasih")
 
-        // Feed just enough for cutter blade (~5mm = 40 dots), then partial cut
-        buf += byteArrayOf(0x1D, 0x56, 0x42, 0x28) // GS V B 40dots
+        // Some low-cost 58mm printers mis-handle GS V cut commands and can feed very long.
+        // Use a short plain feed and let operator tear manually.
+        buf += feedLines(2)
 
         return buf.fold(ByteArray(0)) { acc, arr -> acc + arr }
     }
