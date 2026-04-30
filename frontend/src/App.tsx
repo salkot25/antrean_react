@@ -740,7 +740,7 @@ export default function App() {
           /* Android app: show Bluetooth printer status */
           <div
             className={`w-full rounded-xl p-3 flex items-center justify-between border ${
-              printerStatus.connected
+              printerStatus.address
                 ? "bg-green-50 border-green-200"
                 : "bg-amber-50 border-amber-200"
             }`}
@@ -749,18 +749,22 @@ export default function App() {
               <Printer
                 size={20}
                 className={
-                  printerStatus.connected ? "text-green-700" : "text-amber-600"
+                  printerStatus.address ? "text-green-700" : "text-amber-600"
                 }
               />
               <div>
                 <p
                   className={`text-sm font-medium ${
-                    printerStatus.connected
+                    printerStatus.address
                       ? "text-green-700"
                       : "text-amber-700"
                   }`}
                 >
-                  {printerStatus.connected ? "Printer Terhubung" : "Printer Belum Terhubung"}
+                  {printerStatus.address
+                    ? printerStatus.connected
+                      ? "Printer Terhubung"
+                      : "Printer Siap Digunakan"
+                    : "Printer Belum Dipilih"}
                 </p>
                 <p className="text-xs text-slate-500 truncate max-w-[160px]">
                   {printerStatus.address
