@@ -91,8 +91,9 @@ export const requestBridgePrint = async (
     };
   }
 
-  const bridgeFn = bridge.printTicket ?? bridge.printThermal;
-  if (!bridgeFn) {
+  const hasPrintTicket = typeof bridge.printTicket === "function";
+  const hasPrintThermal = typeof bridge.printThermal === "function";
+  if (!hasPrintTicket && !hasPrintThermal) {
     return {
       status: "unsupported",
       mode: "bridge",
@@ -163,7 +164,15 @@ export const requestBridgePrint = async (
 
       window.onAndroidPrintResult = handler;
 
-      Promise.resolve(bridgeFn(JSON.stringify(payload)))
+      Promise.resolve()
+        .then(() => {
+          const payloadJson = JSON.stringify(payload);
+          // Important: call method through bridge object to preserve Java bridge context.
+          if (hasPrintTicket && bridge.printTicket) {
+            return bridge.printTicket(payloadJson);
+          }
+          return bridge.printThermal?.(payloadJson);
+        })
         .then((raw) => {
           const immediate = normalizeBridgeResponse(raw);
 
