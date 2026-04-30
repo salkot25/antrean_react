@@ -101,21 +101,94 @@ export const requestBridgePrint = async (
   }
 
   try {
-    const timeoutPromise = new Promise<BridgePrintResult>((resolve) => {
-      setTimeout(() => {
-        resolve({
-          status: "timeout",
-          mode: "bridge",
-          reason: "bridge_timeout",
-        });
+    return await new Promise<BridgePrintResult>((resolve) => {
+      let settled = false;
+      const prevHandler = window.onAndroidPrintResult;
+
+      const cleanup = (handler: typeof window.onAndroidPrintResult) => {
+        if (window.onAndroidPrintResult === handler) {
+          window.onAndroidPrintResult = prevHandler;
+        }
+      };
+
+      const resolveOnce = (
+        result: BridgePrintResult,
+        handler: typeof window.onAndroidPrintResult,
+        timer: ReturnType<typeof setTimeout>,
+      ) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        cleanup(handler);
+        resolve(result);
+      };
+
+      const handler: typeof window.onAndroidPrintResult = (asyncResult) => {
+        try {
+          prevHandler?.(asyncResult);
+        } catch {
+          // Ignore external callback errors and keep bridge flow intact.
+        }
+
+        const matchesTicket =
+          !asyncResult?.number || asyncResult.number === payload.number;
+        if (!matchesTicket) return;
+
+        if (asyncResult.success) {
+          resolveOnce({ status: "success", mode: "bridge" }, handler, timer);
+        } else {
+          resolveOnce(
+            {
+              status: "failed",
+              mode: "bridge",
+              reason: asyncResult.reason || "bridge_async_failed",
+            },
+            handler,
+            timer,
+          );
+        }
+      };
+
+      const timer = setTimeout(() => {
+        resolveOnce(
+          {
+            status: "timeout",
+            mode: "bridge",
+            reason: "bridge_timeout",
+          },
+          handler,
+          timer,
+        );
       }, timeoutMs);
+
+      window.onAndroidPrintResult = handler;
+
+      Promise.resolve(bridgeFn(JSON.stringify(payload)))
+        .then((raw) => {
+          const immediate = normalizeBridgeResponse(raw);
+
+          // If bridge returns an immediate error, fail fast.
+          if (
+            immediate.status === "failed" ||
+            immediate.status === "unsupported"
+          ) {
+            resolveOnce(immediate, handler, timer);
+          }
+          // For "success" (usually just "ok" ack), wait for async callback.
+        })
+        .catch((error) => {
+          resolveOnce(
+            {
+              status: "failed",
+              mode: "bridge",
+              reason:
+                error instanceof Error ? error.message : "bridge_exception",
+            },
+            handler,
+            timer,
+          );
+        });
     });
-
-    const callPromise = Promise.resolve(bridgeFn(JSON.stringify(payload))).then(
-      normalizeBridgeResponse,
-    );
-
-    return Promise.race([callPromise, timeoutPromise]);
   } catch (error) {
     return {
       status: "failed",
@@ -138,7 +211,10 @@ export const getPrinterStatus = (): { connected: boolean; address: string } => {
   try {
     const raw = window.AndroidPrintBridge?.getPrinterStatus?.();
     if (!raw) return { connected: false, address: "" };
-    const parsed = JSON.parse(raw) as { connected?: unknown; address?: unknown };
+    const parsed = JSON.parse(raw) as {
+      connected?: unknown;
+      address?: unknown;
+    };
     return {
       connected: Boolean(parsed.connected),
       address: String(parsed.address || ""),

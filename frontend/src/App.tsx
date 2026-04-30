@@ -104,8 +104,14 @@ export default function App() {
     window.onAndroidPrintResult = (result) => {
       // Refresh printer status after any print attempt
       checkStatus();
-      if (!result.success && result.reason === "bluetooth_disabled") {
-        alert("Bluetooth tidak aktif. Harap aktifkan Bluetooth dan coba lagi.");
+      if (!result.success) {
+        if (result.reason === "bluetooth_disabled") {
+          alert("Bluetooth tidak aktif. Harap aktifkan Bluetooth dan coba lagi.");
+        } else if (result.reason === "permission_denied") {
+          alert("Izin Bluetooth ditolak. Izinkan akses Bluetooth di pengaturan aplikasi.");
+        } else if (result.reason === "no_device_paired") {
+          alert("Printer belum dipilih. Silakan pilih printer Bluetooth terlebih dahulu.");
+        }
       }
     };
 
@@ -274,6 +280,13 @@ export default function App() {
         service: data.service,
       },
     });
+
+    if (isBridgeAvailable()) {
+      alert(
+        `Print gagal (${bridgeResult.reason || "unknown_error"}). Silakan cek Bluetooth/printer lalu coba cetak ulang.`,
+      );
+      return;
+    }
 
     const fallbackResult = browserPrint();
     logPrintEvent({
@@ -755,9 +768,7 @@ export default function App() {
               <div>
                 <p
                   className={`text-sm font-medium ${
-                    printerStatus.address
-                      ? "text-green-700"
-                      : "text-amber-700"
+                    printerStatus.address ? "text-green-700" : "text-amber-700"
                   }`}
                 >
                   {printerStatus.address
