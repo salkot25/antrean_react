@@ -3,6 +3,8 @@ package id.salkot.plnqms
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -33,7 +35,8 @@ class BluetoothPickerActivity : AppCompatActivity() {
         binding = ActivityBluetoothPickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val adapter = BluetoothAdapter.getDefaultAdapter()
+        val adapter: BluetoothAdapter? = (getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+            ?: BluetoothAdapter.getDefaultAdapter()
         if (adapter == null || !adapter.isEnabled) {
             Log.w(TAG, "Bluetooth not available or disabled")
             setResult(Activity.RESULT_CANCELED)

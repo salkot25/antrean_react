@@ -3,6 +3,9 @@ import { createQueue, getConfig, logEvent } from "./api";
 import {
   browserPrint,
   requestBridgePrint,
+  isBridgeAvailable,
+  getPrinterStatus,
+  pickPrinter,
   type BridgePrintResult,
   type TicketPrintPayload,
 } from "./utils/printBridge";
@@ -69,6 +72,10 @@ export default function App() {
   const [lastPrinted, setLastPrinted] = useState<LastPrintedTicket | null>(
     null,
   );
+  const [printerStatus, setPrinterStatus] = useState<{
+    connected: boolean;
+    address: string;
+  } | null>(null);
 
   const getService = (code: string) => SERVICES.find((s) => s.code === code);
 
@@ -83,6 +90,29 @@ export default function App() {
     } catch {
       localStorage.removeItem("pln_last_printed_ticket");
     }
+  }, []);
+
+  // Poll printer status every 10 s when running inside Android app
+  useEffect(() => {
+    if (!isBridgeAvailable()) return;
+
+    const checkStatus = () => setPrinterStatus(getPrinterStatus());
+    checkStatus();
+    const interval = setInterval(checkStatus, 10_000);
+
+    // Handle async print results from Android bridge
+    window.onAndroidPrintResult = (result) => {
+      // Refresh printer status after any print attempt
+      checkStatus();
+      if (!result.success && result.reason === "bluetooth_disabled") {
+        alert("Bluetooth tidak aktif. Harap aktifkan Bluetooth dan coba lagi.");
+      }
+    };
+
+    return () => {
+      clearInterval(interval);
+      window.onAndroidPrintResult = undefined;
+    };
   }, []);
 
   useEffect(() => {
@@ -705,27 +735,70 @@ export default function App() {
           />
         </div>
 
-        {/* Print Status */}
-        <div className="w-full bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Printer
-              size={20}
-              className={autoPrint ? "text-green-700" : "text-slate-500"}
-            />
-            <div>
-              <p
-                className={`text-sm font-medium ${autoPrint ? "text-green-700" : "text-slate-600"}`}
-              >
-                {autoPrint ? "Print Aktif" : "Print Nonaktif"}
-              </p>
-              <p
-                className={`text-xs font-medium ${autoPrint ? "text-amber-600" : "text-slate-500"}`}
-              >
-                Mode: {autoPrint ? "Auto Print" : "Manual (Cetak Ulang)"}
-              </p>
+        {/* Print Status / Printer Setup */}
+        {isBridgeAvailable() && printerStatus !== null ? (
+          /* Android app: show Bluetooth printer status */
+          <div
+            className={`w-full rounded-xl p-3 flex items-center justify-between border ${
+              printerStatus.connected
+                ? "bg-green-50 border-green-200"
+                : "bg-amber-50 border-amber-200"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Printer
+                size={20}
+                className={
+                  printerStatus.connected ? "text-green-700" : "text-amber-600"
+                }
+              />
+              <div>
+                <p
+                  className={`text-sm font-medium ${
+                    printerStatus.connected
+                      ? "text-green-700"
+                      : "text-amber-700"
+                  }`}
+                >
+                  {printerStatus.connected ? "Printer Terhubung" : "Printer Belum Terhubung"}
+                </p>
+                <p className="text-xs text-slate-500 truncate max-w-[160px]">
+                  {printerStatus.address
+                    ? printerStatus.address
+                    : "Belum ada printer dipilih"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => pickPrinter()}
+              className="text-xs font-semibold text-[#004482] bg-white border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 active:scale-95 transition-all"
+            >
+              {printerStatus.address ? "Ganti" : "Pilih Printer"}
+            </button>
+          </div>
+        ) : !isBridgeAvailable() ? (
+          /* Browser mode: show simple auto-print indicator */
+          <div className="w-full bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Printer
+                size={20}
+                className={autoPrint ? "text-green-700" : "text-slate-500"}
+              />
+              <div>
+                <p
+                  className={`text-sm font-medium ${autoPrint ? "text-green-700" : "text-slate-600"}`}
+                >
+                  {autoPrint ? "Print Aktif" : "Print Nonaktif"}
+                </p>
+                <p
+                  className={`text-xs font-medium ${autoPrint ? "text-amber-600" : "text-slate-500"}`}
+                >
+                  Mode: {autoPrint ? "Auto Print" : "Manual (Cetak Ulang)"}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         {/* CTA sticky for mobile */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent sm:static sm:p-0 sm:bg-none">

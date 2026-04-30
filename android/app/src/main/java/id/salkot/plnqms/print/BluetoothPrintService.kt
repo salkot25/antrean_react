@@ -2,7 +2,9 @@ package id.salkot.plnqms.print
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +18,7 @@ import java.util.UUID
  * SPP UUID is the standard serial profile UUID used by virtually all
  * Bluetooth Classic thermal printers.
  */
-class BluetoothPrintService {
+class BluetoothPrintService(private val context: Context) {
 
     companion object {
         private const val TAG = "BluetoothPrintService"
@@ -53,8 +55,12 @@ class BluetoothPrintService {
         val address = pairedDeviceAddress
             ?: return@withContext PrintResult.Error("no_device_paired")
 
-        val adapter = BluetoothAdapter.getDefaultAdapter()
-            ?: return@withContext PrintResult.Error("bluetooth_not_supported")
+        val adapter: BluetoothAdapter? = (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+            ?: BluetoothAdapter.getDefaultAdapter()
+
+        if (adapter == null) {
+            return@withContext PrintResult.Error("bluetooth_not_supported")
+        }
 
         if (!adapter.isEnabled) {
             return@withContext PrintResult.Error("bluetooth_disabled")

@@ -23,11 +23,18 @@ export type TicketPrintPayload = {
 type AndroidPrintBridge = {
   printTicket?: (payload: string) => unknown;
   printThermal?: (payload: string) => unknown;
+  getPrinterStatus?: () => string;
+  pickPrinter?: () => void;
 };
 
 declare global {
   interface Window {
     AndroidPrintBridge?: AndroidPrintBridge;
+    onAndroidPrintResult?: (result: {
+      success: boolean;
+      reason: string | null;
+      number: string;
+    }) => void;
   }
 }
 
@@ -121,4 +128,27 @@ export const requestBridgePrint = async (
 export const browserPrint = (): BridgePrintResult => {
   window.print();
   return { status: "success", mode: "browser" };
+};
+
+/** Returns true when running inside the Android kiosk app. */
+export const isBridgeAvailable = (): boolean => !!window.AndroidPrintBridge;
+
+/** Queries the Android bridge for current printer connection status. */
+export const getPrinterStatus = (): { connected: boolean; address: string } => {
+  try {
+    const raw = window.AndroidPrintBridge?.getPrinterStatus?.();
+    if (!raw) return { connected: false, address: "" };
+    const parsed = JSON.parse(raw) as { connected?: unknown; address?: unknown };
+    return {
+      connected: Boolean(parsed.connected),
+      address: String(parsed.address || ""),
+    };
+  } catch {
+    return { connected: false, address: "" };
+  }
+};
+
+/** Opens the Bluetooth device picker in the Android app. */
+export const pickPrinter = (): void => {
+  window.AndroidPrintBridge?.pickPrinter?.();
 };

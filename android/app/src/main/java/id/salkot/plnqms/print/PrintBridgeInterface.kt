@@ -35,7 +35,7 @@ class PrintBridgeInterface(
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val printService = BluetoothPrintService()
+    private val printService = BluetoothPrintService(activity)
     private val prefs: SharedPreferences =
         activity.getSharedPreferences(PREF_FILE, AppCompatActivity.MODE_PRIVATE)
 
