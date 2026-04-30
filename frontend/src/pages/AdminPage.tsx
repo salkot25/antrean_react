@@ -59,7 +59,15 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const data = await getWaitingQueues(service);
-      setQueues(data || []);
+      // Validate response is an array; GAS may return {error:"..."} on failure
+      if (Array.isArray(data)) {
+        setQueues(data);
+      } else if (data && (data as any).error) {
+        console.error("getWaitingQueues error:", (data as any).error);
+        setQueues([]);
+      } else {
+        setQueues([]);
+      }
       setLastRefreshed(new Date());
     } catch (error) {
       console.error(error);
@@ -119,7 +127,10 @@ export default function AdminPage() {
         }
       }
     } catch (displayError) {
-      console.error("Failed to fetch display data for lastCalled", displayError);
+      console.error(
+        "Failed to fetch display data for lastCalled",
+        displayError,
+      );
     }
   };
 
@@ -152,7 +163,8 @@ export default function AdminPage() {
         counter: counterName,
       });
       speakQueue(numberCalled, counterName, ttsConfig);
-      fetchQueues();
+      // Small delay to let GAS finish processing the no-cors POST before refetching
+      setTimeout(() => fetchQueues(), 1500);
     } catch (error) {
       console.error(error);
       alert("Gagal memanggil antrian.");
