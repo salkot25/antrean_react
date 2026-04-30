@@ -105,17 +105,14 @@ object EscPosEncoder {
 
         buf += separator()
 
-        // Footer — centered, italic simulation with spacing
+        // Footer — centered
         buf += ALIGN_CENTER
         buf += text("Mohon tunggu hingga nomor")
         buf += text("Anda dipanggil.")
-        buf += feedLines(1)
         buf += text("Terima kasih")
-        buf += feedLines(1)
 
-        // Feed exactly 3mm past cutter blade then cut
-        // GS V 66 n = feed n * 0.125mm then partial cut
-        buf += byteArrayOf(0x1D, 0x56, 0x42, 0x18) // feed 24 dots (~3mm) then partial cut
+        // Feed just enough for cutter blade (~5mm = 40 dots), then partial cut
+        buf += byteArrayOf(0x1D, 0x56, 0x42, 0x28) // GS V B 40dots
 
         return buf.fold(ByteArray(0)) { acc, arr -> acc + arr }
     }
