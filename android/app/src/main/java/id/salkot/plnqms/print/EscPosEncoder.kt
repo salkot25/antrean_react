@@ -111,10 +111,11 @@ object EscPosEncoder {
         buf += text("Anda dipanggil.")
         buf += feedLines(1)
         buf += text("Terima kasih")
-        buf += feedLines(3)
+        buf += feedLines(1)
 
-        // Partial cut
-        buf += CUT_PARTIAL
+        // Feed exactly 3mm past cutter blade then cut
+        // GS V 66 n = feed n * 0.125mm then partial cut
+        buf += byteArrayOf(0x1D, 0x56, 0x42, 0x18) // feed 24 dots (~3mm) then partial cut
 
         return buf.fold(ByteArray(0)) { acc, arr -> acc + arr }
     }
