@@ -83,6 +83,38 @@ export const getWaitingQueues = async (service?: string) => {
   return response.json();
 };
 
+// ─── getTodayHistoryQueues ─────────────────────────────────────────────────────
+export const getTodayHistoryQueues = async (service?: string) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
+    return [
+      {
+        id: "1",
+        number: "CS-001",
+        service: "CS",
+        customer_name: "Budi",
+        status: "waiting",
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: "2",
+        number: "PLN-002",
+        service: "PLN",
+        customer_name: "",
+        status: "called",
+        created_at: new Date().toISOString(),
+      },
+    ];
+  }
+
+  const url = service
+    ? `${GAS_WEB_APP_URL}?action=history_today&service=${service}`
+    : `${GAS_WEB_APP_URL}?action=history_today`;
+  const response = await fetch(`${url}&_t=${Date.now()}`, {
+    cache: "no-store",
+  });
+  return response.json();
+};
+
 // ─── callNextQueue ───────────────────────────────────────────────────────────────
 export const callNextQueue = async (service: string, counter: string) => {
   if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {

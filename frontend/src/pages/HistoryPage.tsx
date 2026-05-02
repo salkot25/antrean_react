@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWaitingQueues, getConfig } from "../api";
+import { getTodayHistoryQueues, getConfig } from "../api";
 import {
   requestBridgePrint,
   browserPrint,
@@ -27,31 +27,6 @@ type TicketStatus = "waiting" | "called" | "loading";
 
 type DisplayTicket = PrintedTicket & { status: TicketStatus };
 
-const LOCAL_STORAGE_KEY = "pln_printed_tickets";
-
-function loadStoredTickets(): PrintedTicket[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const all = raw ? (JSON.parse(raw) as PrintedTicket[]) : [];
-
-    // Backward compatibility: include last printed ticket if history list was empty.
-    const rawLast = localStorage.getItem("pln_last_printed_ticket");
-    const last = rawLast ? (JSON.parse(rawLast) as PrintedTicket) : null;
-    const combined = [...all, ...(last ? [last] : [])];
-
-    const map = new Map<string, PrintedTicket>();
-    combined.forEach((t) => {
-      if (!t?.number || !t?.service || !t?.printedAt) return;
-      const key = `${t.number}|${t.service}|${t.printedAt}`;
-      map.set(key, t);
-    });
-
-    return Array.from(map.values());
-  } catch {
-    return [];
-  }
-}
-
 export default function HistoryPage() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
@@ -59,39 +34,41 @@ export default function HistoryPage() {
   const [printing, setPrinting] = useState<string | null>(null);
   const [officeName, setOfficeName] = useState("PLN");
 
+  const formatPrintedAt = (iso: string) => {
+    if (!iso) return "";
+    const dt = new Date(iso);
+    if (Number.isNaN(dt.getTime())) return iso;
+    return (
+      dt.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }) +
+      " " +
+      dt.toLocaleTimeString("id-ID")
+    );
+  };
+
   const refreshStatuses = useCallback(async () => {
     setLoading(true);
     try {
-      const local = loadStoredTickets();
-      if (local.length === 0) {
+      const rows = await getTodayHistoryQueues();
+      if (!Array.isArray(rows) || rows.length === 0) {
         setTickets([]);
         return;
       }
 
-      setTickets(
-        local.map((t) => ({ ...t, status: "loading" as TicketStatus })),
-      );
+      const mapped: DisplayTicket[] = rows.map((row: any) => ({
+        number: String(row.number || ""),
+        service: String(row.service || ""),
+        customerName: String(row.customer_name || ""),
+        printedAt: formatPrintedAt(String(row.created_at || "")),
+        status: row.status === "waiting" ? "waiting" : "called",
+      }));
 
-      const waitingData = await getWaitingQueues();
-      const waitingNumbers = new Set<string>(
-        Array.isArray(waitingData)
-          ? (waitingData as { number: string }[]).map((q) => q.number)
-          : [],
-      );
-
-      setTickets(
-        local.map((t) => ({
-          ...t,
-          status: (waitingNumbers.has(t.number)
-            ? "waiting"
-            : "called") as TicketStatus,
-        })),
-      );
+      setTickets(mapped);
     } catch {
-      const local = loadStoredTickets();
-      setTickets(
-        local.map((t) => ({ ...t, status: "waiting" as TicketStatus })),
-      );
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -163,7 +140,7 @@ export default function HistoryPage() {
 
       <main className="flex-1 w-full max-w-md mx-auto px-4 pt-6 pb-12 flex flex-col gap-5">
         <p className="text-sm text-gray-500 text-center">
-          Riwayat nomor antrian yang pernah dicetak di perangkat ini
+          Riwayat nomor antrian hari ini (sinkron dari backend)
         </p>
 
         {loading && tickets.length === 0 ? (
@@ -175,7 +152,7 @@ export default function HistoryPage() {
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
             <Inbox size={48} strokeWidth={1.2} />
             <p className="text-sm font-medium">
-              Belum ada riwayat tiket dicetak
+              Belum ada riwayat tiket hari ini
             </p>
             <button
               onClick={() => navigate("/")}

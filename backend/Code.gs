@@ -119,6 +119,8 @@ function doGet(e) {
 
     if (action === "list") {
       return handleListQueue(e.parameter.service);
+    } else if (action === "history_today") {
+      return handleHistoryToday(e.parameter.service);
     } else if (action === "display") {
       return handleDisplay();
     } else if (action === "get_config") {
@@ -898,6 +900,58 @@ function handleListQueue(serviceFilter) {
   return jsonOut(result);
 }
 
+function handleHistoryToday(serviceFilter) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("queues");
+  if (!sheet) return jsonOut([]);
+
+  var tz = Session.getScriptTimeZone();
+  var todayStr = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd");
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+
+  for (var i = 1; i < data.length; i++) {
+    var rowService = data[i][Q_SERVICE];
+    var rowDate = data[i][Q_DATE];
+    var createdAt = data[i][Q_CREATED_AT];
+
+    var dateMatch = false;
+    if (rowDate) {
+      dateMatch = String(rowDate) === todayStr;
+    } else if (createdAt) {
+      dateMatch =
+        Utilities.formatDate(new Date(createdAt), tz, "yyyy-MM-dd") ===
+        todayStr;
+    }
+
+    if (!dateMatch) continue;
+    if (serviceFilter && rowService !== serviceFilter) continue;
+
+    result.push({
+      id: data[i][Q_ID],
+      number: data[i][Q_NUMBER],
+      service: rowService,
+      customer_name: data[i][Q_CUSTOMER] || "",
+      status: data[i][Q_STATUS] || "waiting",
+      created_at: createdAt ? new Date(createdAt).toISOString() : "",
+      called_at: data[i][Q_CALLED_AT]
+        ? new Date(data[i][Q_CALLED_AT]).toISOString()
+        : "",
+      counter: data[i][Q_COUNTER] || "",
+      date: rowDate || todayStr,
+    });
+  }
+
+  // Latest ticket first
+  result.sort(function (a, b) {
+    return (
+      new Date(b.created_at || 0).getTime() -
+      new Date(a.created_at || 0).getTime()
+    );
+  });
+
+  return jsonOut(result);
+}
+
 function handleDisplay() {
   var countersSheet =
     SpreadsheetApp.getActiveSpreadsheet().getSheetByName("counters");
@@ -1445,7 +1499,10 @@ function maybeAutoCleanupLogs() {
 
     var retentionDays = parseRetentionDays(config.logsRetentionDays, 30);
     var props = PropertiesService.getScriptProperties();
-    var lastRunMs = parseInt(props.getProperty("logs_cleanup_last_run_ms") || "0", 10);
+    var lastRunMs = parseInt(
+      props.getProperty("logs_cleanup_last_run_ms") || "0",
+      10,
+    );
     var nowMs = Date.now();
 
     if (lastRunMs > 0 && nowMs - lastRunMs < LOGS_CLEANUP_THROTTLE_MS) {
