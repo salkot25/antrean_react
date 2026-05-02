@@ -909,19 +909,31 @@ function handleHistoryToday(serviceFilter) {
   var data = sheet.getDataRange().getValues();
   var result = [];
 
+  function toYmd(value) {
+    if (!value) return "";
+    if (value instanceof Date) {
+      return Utilities.formatDate(value, tz, "yyyy-MM-dd");
+    }
+    var str = String(value).trim();
+    // Accept plain yyyy-MM-dd or datetime-like strings that start with it.
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      return str.substring(0, 10);
+    }
+    var parsed = new Date(str);
+    if (isFinite(parsed.getTime())) {
+      return Utilities.formatDate(parsed, tz, "yyyy-MM-dd");
+    }
+    return "";
+  }
+
   for (var i = 1; i < data.length; i++) {
     var rowService = data[i][Q_SERVICE];
     var rowDate = data[i][Q_DATE];
     var createdAt = data[i][Q_CREATED_AT];
 
-    var dateMatch = false;
-    if (rowDate) {
-      dateMatch = String(rowDate) === todayStr;
-    } else if (createdAt) {
-      dateMatch =
-        Utilities.formatDate(new Date(createdAt), tz, "yyyy-MM-dd") ===
-        todayStr;
-    }
+    var rowDateStr = toYmd(rowDate);
+    var createdDateStr = toYmd(createdAt);
+    var dateMatch = rowDateStr === todayStr || createdDateStr === todayStr;
 
     if (!dateMatch) continue;
     if (serviceFilter && rowService !== serviceFilter) continue;
