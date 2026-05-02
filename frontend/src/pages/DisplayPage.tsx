@@ -29,12 +29,35 @@ export default function DisplayPage() {
   const callingCountRef = useRef(0);
   const videoVolumeRef = useRef(100);
   const videoVolumeDuckedRef = useRef(15);
+  const autoAudioTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
   // YouTube volume helpers via postMessage (requires enablejsapi=1)
   const setVideoVolume = (volume: number) => {
     iframeRef.current?.contentWindow?.postMessage(
       JSON.stringify({ event: "command", func: "setVolume", args: [volume] }),
       "*",
+    );
+  };
+
+  const activateVideoAudio = () => {
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+
+    const send = (func: string, args: unknown[] = []) => {
+      target.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+    };
+
+    send("unMute");
+    send("playVideo");
+    send("setVolume", [videoVolumeRef.current]);
+  };
+
+  const scheduleAutoVideoAudioActivation = () => {
+    autoAudioTimersRef.current.forEach(clearTimeout);
+    autoAudioTimersRef.current = [0, 500, 1300].map((delay) =>
+      setTimeout(() => {
+        activateVideoAudio();
+      }, delay),
     );
   };
 
@@ -56,16 +79,16 @@ export default function DisplayPage() {
   // 3 fixed lokets — always shown regardless of API data
   const FIXED_COUNTERS = [
     {
-      loketName: "Loket Customer Service",
-      service: "CS",
-      label: "Customer Service",
-      shortLabel: "CS",
-    },
-    {
       loketName: "Loket PLN Mobile Experience",
       service: "PLN",
       label: "PLN Mobile Experience",
       shortLabel: "PLN",
+    },
+    {
+      loketName: "Loket Customer Service",
+      service: "CS",
+      label: "Customer Service",
+      shortLabel: "CS",
     },
     {
       loketName: "Loket Customer Care",
@@ -78,6 +101,13 @@ export default function DisplayPage() {
   useEffect(() => {
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timeInterval);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      autoAudioTimersRef.current.forEach(clearTimeout);
+      autoAudioTimersRef.current = [];
+    };
   }, []);
 
   // Load config once on page open/reload.
@@ -262,86 +292,102 @@ export default function DisplayPage() {
   };
 
   return (
-    <div className="bg-[#F5F7FA] h-screen w-screen overflow-hidden flex flex-col font-['Inter']">
-      <header className="bg-white leading-tight tracking-tight docked full-width top-0 border-b border-slate-200 shadow-sm shadow-blue-900/10 flex justify-between items-center h-20 px-10 w-full shrink-0 z-50">
-        <div className="flex items-center gap-4">
-          <Zap className="text-[#005BAC]" size={36} fill="#005BAC" />
-          <h1 className="text-2xl font-black text-[#005BAC] uppercase tracking-widest">
-            {officeName}
-          </h1>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="text-slate-500 font-semibold text-xl flex items-center gap-2">
-            <Clock size={24} />
-            {formattedDateTime()}
+    <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] h-screen w-screen overflow-hidden flex flex-col font-['Inter']">
+      <header className="bg-primary leading-tight tracking-tight border-b border-blue-900/20 shadow-sm flex justify-between items-center h-16 lg:h-20 px-4 lg:px-8 w-full shrink-0 z-50 text-white">
+        <div className="flex items-center gap-3 lg:gap-4 min-w-0">
+          <Zap className="text-[#FFC72C] shrink-0" size={30} fill="#FFC72C" />
+          <div className="min-w-0">
+            <h1 className="text-base lg:text-2xl font-black uppercase tracking-wide lg:tracking-widest truncate">
+              {officeName}
+            </h1>
+            <p className="text-[11px] lg:text-xs text-white/75 font-medium">
+              Display Antrean Real-Time
+            </p>
           </div>
-          <Cloud size={28} className="text-slate-500" />
+        </div>
+        <div className="flex items-center gap-3 lg:gap-5">
+          <div className="text-white/90 font-semibold text-xs lg:text-lg flex items-center gap-1.5 lg:gap-2">
+            <Clock size={18} className="lg:w-6 lg:h-6" />
+            <span className="hidden md:inline">{formattedDateTime()}</span>
+            <span className="md:hidden">
+              {currentTime.toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+          <Cloud size={22} className="text-white/80 lg:w-7 lg:h-7" />
         </div>
       </header>
 
-      <main className="flex-1 w-full p-10 grid grid-cols-10 gap-10 mb-16 relative">
-        <section className="col-span-3 flex flex-col gap-5 h-full">
-          {displayCounters.map((c, idx) => {
-            const styles = getServiceStyles(c.service);
+      <main className="flex-1 w-full px-4 lg:px-8 py-4 lg:py-6 grid gap-4 lg:gap-6 lg:grid-cols-5 xl:grid-cols-10 mb-16 min-h-0">
+        <section className="lg:col-span-2 xl:col-span-3 min-h-0">
+          <div className="h-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-4">
+            {displayCounters.map((c, idx) => {
+              const styles = getServiceStyles(c.service);
 
-            return (
-              <div
-                key={idx}
-                className={`flex-1 bg-white rounded-xl shadow-sm border-t-8 ${styles.borderColor} flex flex-col p-5 relative overflow-hidden transition-all duration-500 ${
-                  c.isCalling
-                    ? "ring-2 ring-yellow-400 shadow-lg shadow-yellow-200/60 z-10"
-                    : c.isServing
-                      ? "ring-2 ring-green-300 shadow-md shadow-green-100/60"
-                      : ""
-                }`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <span className="font-bold text-2xl text-[#1F2937] leading-tight">
-                    {c.label}
-                  </span>
-                  {styles.icon}
-                </div>
-
-                <div className="flex-1 flex flex-col items-center justify-center py-2">
-                  <span
-                    className={`text-[90px] leading-none tracking-tight font-black transition-all duration-300 ${
-                      c.isCalling
-                        ? "text-[#FFC72C] animate-pulse drop-shadow-md"
-                        : c.isServing
-                          ? "text-[#16A34A]"
-                          : "text-[#1F2937]"
-                    }`}
-                  >
-                    {c.number}
-                  </span>
-                </div>
-
-                <div className="bg-[#F5F7FA] rounded-lg px-4 py-3 flex justify-between items-center mt-2">
-                  <span className="font-medium text-base text-[#6B7280] truncate mr-2">
-                    {c.loketName}
-                  </span>
-                  {c.isCalling ? (
-                    <span className="text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shrink-0 bg-yellow-400/20 text-yellow-700 animate-pulse">
-                      Memanggil
+              return (
+                <div
+                  key={idx}
+                  className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col p-4 lg:p-5 relative overflow-hidden transition-all duration-500 ${
+                    c.isCalling
+                      ? "ring-2 ring-yellow-400 shadow-lg shadow-yellow-200/60 z-10"
+                      : c.isServing
+                        ? "ring-2 ring-emerald-300 shadow-md shadow-emerald-100/60"
+                        : ""
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0 left-0 w-full h-1.5 ${styles.borderColor.replace("border", "bg")}`}
+                  />
+                  <div className="flex justify-between items-start mb-2 mt-1">
+                    <span className="font-bold text-lg lg:text-2xl text-slate-800 leading-tight">
+                      {c.label}
                     </span>
-                  ) : c.isServing ? (
-                    <span className="text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shrink-0 bg-green-100 text-green-700">
-                      Sedang Dilayani
-                    </span>
-                  ) : (
+                    {styles.icon}
+                  </div>
+
+                  <div className="flex-1 flex flex-col items-center justify-center py-1 lg:py-2">
                     <span
-                      className={`text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shrink-0 ${styles.labelBg}`}
+                      className={`text-[56px] lg:text-[88px] leading-none tracking-tight font-black transition-all duration-300 ${
+                        c.isCalling
+                          ? "text-[#FFC72C] animate-pulse drop-shadow-md"
+                          : c.isServing
+                            ? "text-emerald-600"
+                            : "text-slate-800"
+                      }`}
                     >
-                      Menunggu
+                      {c.number}
                     </span>
-                  )}
+                  </div>
+
+                  <div className="mx-0.5 lg:mx-1 bg-slate-50/90 border border-slate-200/70 rounded-[14px] px-3 lg:px-4 py-2 flex justify-between items-center mt-2.5 min-h-[44px]">
+                    <span className="font-medium text-sm lg:text-[15px] text-slate-500 truncate mr-2 leading-tight">
+                      {c.loketName}
+                    </span>
+                    {c.isCalling ? (
+                      <span className="text-[10px] lg:text-[11px] font-bold px-2.5 lg:px-3 py-1.5 rounded-lg uppercase tracking-[0.08em] shrink-0 bg-yellow-400/20 text-yellow-700 animate-pulse">
+                        Memanggil
+                      </span>
+                    ) : c.isServing ? (
+                      <span className="text-[10px] lg:text-[11px] font-bold px-2.5 lg:px-3 py-1.5 rounded-lg uppercase tracking-[0.08em] shrink-0 bg-emerald-100 text-emerald-700">
+                        Dilayani
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-[10px] lg:text-[11px] font-bold px-2.5 lg:px-3 py-1.5 rounded-lg uppercase tracking-[0.08em] shrink-0 ${styles.labelBg}`}
+                      >
+                        Menunggu
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </section>
 
-        <section className="col-span-7 h-full bg-slate-200 rounded-xl overflow-hidden relative shadow-sm">
+        <section className="lg:col-span-3 xl:col-span-7 min-h-0 bg-white rounded-3xl overflow-hidden relative border border-slate-200 shadow-sm">
           <div className="absolute inset-0">
             <iframe
               ref={iframeRef}
@@ -358,41 +404,25 @@ export default function DisplayPage() {
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="absolute inset-0 w-full h-full object-cover"
+              onLoad={scheduleAutoVideoAudioActivation}
             />
 
             <button
-              onClick={() => {
-                iframeRef.current?.contentWindow?.postMessage(
-                  JSON.stringify({
-                    event: "command",
-                    func: "unMute",
-                    args: [],
-                  }),
-                  "*",
-                );
-                iframeRef.current?.contentWindow?.postMessage(
-                  JSON.stringify({
-                    event: "command",
-                    func: "setVolume",
-                    args: [videoVolumeRef.current],
-                  }),
-                  "*",
-                );
-              }}
-              className="absolute bottom-3 right-3 z-20 bg-black/50 hover:bg-black/75 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition-all"
+              onClick={scheduleAutoVideoAudioActivation}
+              className="absolute bottom-3 right-3 z-20 bg-black/55 hover:bg-black/75 text-white text-[11px] lg:text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition-all"
               title="Klik untuk mengaktifkan suara video"
             >
               Aktifkan Suara Video
             </button>
 
-            <div className="absolute inset-0 bg-[#005BAC]/10 mix-blend-multiply pointer-events-none" />
+            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
           </div>
         </section>
       </main>
 
-      <footer className="bg-[#005BAC] font-semibold uppercase tracking-wider text-lg fixed bottom-0 left-0 w-full h-16 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] flex items-center overflow-hidden whitespace-nowrap px-8 z-50">
-        <div className="bg-[#FFC72C] text-[#005BAC] px-4 py-2 rounded font-bold mr-4 shrink-0 flex items-center gap-2">
-          <Zap size={20} fill="#005BAC" />
+      <footer className="bg-primary font-semibold uppercase tracking-wider text-sm lg:text-lg fixed bottom-0 left-0 w-full h-14 lg:h-16 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] flex items-center overflow-hidden whitespace-nowrap px-4 lg:px-8 z-50">
+        <div className="bg-[#FFC72C] text-primary px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-bold mr-3 lg:mr-4 shrink-0 flex items-center gap-2">
+          <Zap size={18} fill="#002e5b" />
           INFORMASI
         </div>
         <div className="flex-1 overflow-hidden relative h-full flex items-center">

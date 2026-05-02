@@ -1,11 +1,7 @@
 import { GAS_WEB_APP_URL } from "./config";
 
 // ─── createQueue ────────────────────────────────────────────────────────────────
-export const createQueue = async (
-  service: string,
-  customerName?: string,
-  deviceId?: string,
-) => {
+export const createQueue = async (service: string, customerName?: string) => {
   if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
     return {
       number: `${service}-001`,
@@ -26,7 +22,6 @@ export const createQueue = async (
       action: "create",
       service,
       customerName: customerName || "",
-      deviceId: deviceId || "",
     }),
   });
 
@@ -89,10 +84,7 @@ export const getWaitingQueues = async (service?: string) => {
 };
 
 // ─── getTodayHistoryQueues ─────────────────────────────────────────────────────
-export const getTodayHistoryQueues = async (
-  service?: string,
-  deviceId?: string,
-) => {
+export const getTodayHistoryQueues = async (service?: string) => {
   if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
     return [
       {
@@ -114,11 +106,9 @@ export const getTodayHistoryQueues = async (
     ];
   }
 
-  const params = new URLSearchParams();
-  params.set("action", "history_today");
-  if (service) params.set("service", service);
-  if (deviceId) params.set("deviceId", deviceId);
-  const url = `${GAS_WEB_APP_URL}?${params.toString()}`;
+  const url = service
+    ? `${GAS_WEB_APP_URL}?action=history_today&service=${service}`
+    : `${GAS_WEB_APP_URL}?action=history_today`;
   const response = await fetch(`${url}&_t=${Date.now()}`, {
     cache: "no-store",
   });
@@ -183,6 +173,42 @@ export const updateConfig = async (config: Record<string, any>) => {
     body: JSON.stringify({ action: "set_config", config }),
   });
   return { success: true };
+};
+
+// ─── Survey: submit/get ────────────────────────────────────────────────────────
+export type SurveyPayload = {
+  inputDate: string;
+  phoneNumber: string;
+  satisfaction: "Sangat Puas" | "Puas" | "Kurang Puas" | "Tidak Puas";
+  feedback?: string;
+  source?: string;
+};
+
+export type SurveyRow = SurveyPayload & {
+  createdAt?: string;
+};
+
+export const submitCustomerSatisfaction = async (payload: SurveyPayload) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
+    return { success: true, createdAt: new Date().toISOString() };
+  }
+
+  const response = await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "save_survey", ...payload }),
+  });
+  return response.json();
+};
+
+export const getCustomerSatisfaction = async (limit = 300) => {
+  if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") return [] as SurveyRow[];
+
+  const response = await fetch(
+    `${GAS_WEB_APP_URL}?action=get_surveys&limit=${limit}&_t=${Date.now()}`,
+    { cache: "no-store" },
+  );
+  return response.json();
 };
 
 // ─── loginUser ───────────────────────────────────────────────────────────────────

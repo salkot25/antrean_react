@@ -3,7 +3,6 @@ import {
   getWaitingQueues,
   callNextQueue,
   getConfig,
-  getDisplayData,
   resetQueueData,
 } from "../api";
 import { speakQueue } from "../utils/tts";
@@ -48,89 +47,16 @@ export default function AdminPage() {
     fetchTtsConfig();
   }, []);
 
-  // Map service code to loket counter name (must match handleCall logic)
-  const SERVICE_TO_COUNTER: Record<string, string> = {
-    CS: "Loket Customer Service",
-    PLN: "Loket PLN Mobile Experience",
-    CC: "Loket Customer Care",
-  };
-
   const fetchQueues = async () => {
     setLoading(true);
     try {
       const data = await getWaitingQueues(service);
-      // Validate response is an array; GAS may return {error:"..."} on failure
-      if (Array.isArray(data)) {
-        setQueues(data);
-      } else if (data && (data as any).error) {
-        console.error("getWaitingQueues error:", (data as any).error);
-        setQueues([]);
-      } else {
-        setQueues([]);
-      }
+      setQueues(data || []);
       setLastRefreshed(new Date());
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
-    }
-
-    // Restore lastCalled from backend separately — failure here must not block queue list
-    try {
-      const displayData = await getDisplayData();
-      if (displayData && typeof displayData === "object") {
-        let candidate: {
-          number: string;
-          service: string;
-          counter: string;
-          called_at: string;
-        } | null = null;
-
-        if (service) {
-          const counterName = SERVICE_TO_COUNTER[service];
-          const entry = counterName ? (displayData as any)[counterName] : null;
-          if (entry && entry.number && entry.number !== "--") {
-            candidate = {
-              number: entry.number,
-              service,
-              counter: counterName,
-              called_at: entry.called_at || "",
-            };
-          }
-        } else {
-          for (const [counterName, entry] of Object.entries(
-            displayData as Record<string, any>,
-          )) {
-            if (!entry.number || entry.number === "--") continue;
-            const svcCode =
-              Object.entries(SERVICE_TO_COUNTER).find(
-                ([, v]) => v === counterName,
-              )?.[0] ||
-              entry.service ||
-              "";
-            if (
-              !candidate ||
-              (entry.called_at && entry.called_at > candidate.called_at)
-            ) {
-              candidate = {
-                number: entry.number,
-                service: svcCode,
-                counter: counterName,
-                called_at: entry.called_at || "",
-              };
-            }
-          }
-        }
-
-        if (candidate) {
-          setLastCalled(candidate);
-        }
-      }
-    } catch (displayError) {
-      console.error(
-        "Failed to fetch display data for lastCalled",
-        displayError,
-      );
     }
   };
 
@@ -163,8 +89,7 @@ export default function AdminPage() {
         counter: counterName,
       });
       speakQueue(numberCalled, counterName, ttsConfig);
-      // Small delay to let GAS finish processing the no-cors POST before refetching
-      setTimeout(() => fetchQueues(), 1500);
+      fetchQueues();
     } catch (error) {
       console.error(error);
       alert("Gagal memanggil antrian.");
@@ -207,15 +132,15 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="px-4 py-4 sm:px-10 sm:py-8 flex flex-col gap-6 sm:gap-8 h-full">
+    <div className="px-4 py-4 sm:px-10 sm:py-8 flex flex-col gap-6 sm:gap-8 h-full bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb]">
       {/* Header & Counter Selection */}
-      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21]">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
             Queue Control
           </h1>
           <p className="text-sm sm:text-base text-slate-500 mt-1">
-            Manage active customer queues and service flows.
+            Kendalikan alur pemanggilan antrean secara real-time.
           </p>
         </div>
 
@@ -223,13 +148,13 @@ export default function AdminPage() {
           <button
             onClick={handleResetQueueData}
             disabled={resetting || loading}
-            className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg border border-red-700 transition-all flex items-center justify-center gap-2 text-sm font-medium"
+            className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white px-4 py-2 rounded-xl border border-red-700 transition-all flex items-center justify-center gap-2 text-sm font-medium"
           >
             <RotateCcw size={16} className={resetting ? "animate-spin" : ""} />
             Reset Data Antrian
           </button>
           <select
-            className="bg-slate-50 px-4 py-2 rounded-lg border border-slate-300 focus-within:border-[#004482] focus-within:ring-1 focus-within:ring-[#004482] transition-all cursor-pointer outline-none text-sm font-medium"
+            className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-300 focus-within:border-[#004482] focus-within:ring-1 focus-within:ring-[#004482] transition-all cursor-pointer outline-none text-sm font-medium"
             value={service}
             onChange={(e) => setService(e.target.value)}
           >
@@ -244,7 +169,7 @@ export default function AdminPage() {
       {/* Bento Grid: Control Center */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Current Queue Display (Centerpiece) */}
-        <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden min-h-[180px] sm:min-h-[300px]">
+        <div className="xl:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden min-h-[180px] sm:min-h-[300px]">
           {/* Decorative background elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-100/50 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
@@ -257,7 +182,7 @@ export default function AdminPage() {
               </span>
             </div>
 
-            <h2 className="text-[72px] sm:text-[120px] leading-none font-black text-[#004482] tracking-tighter drop-shadow-sm">
+            <h2 className="text-[72px] sm:text-[120px] leading-none font-black text-primary tracking-tighter drop-shadow-sm">
               {lastCalled ? lastCalled.number : "--"}
             </h2>
             <p className="text-xl text-slate-500 mt-4">
@@ -274,7 +199,7 @@ export default function AdminPage() {
           <button
             onClick={() => handleCall()}
             disabled={loading || queues.length === 0}
-            className="flex-1 bg-[#004482] hover:bg-[#005bac] text-white rounded-xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] border border-blue-900 disabled:opacity-50 disabled:active:scale-100"
+            className="flex-1 bg-primary hover:bg-primary-container text-white rounded-3xl p-6 flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] border border-blue-900/30 disabled:opacity-50 disabled:active:scale-100"
           >
             <SkipForward size={40} />
             <span className="text-xl sm:text-2xl font-semibold">
@@ -290,7 +215,7 @@ export default function AdminPage() {
             <button
               onClick={handleRecall}
               disabled={!lastCalled}
-              className="flex-1 bg-white hover:bg-slate-50 text-[#00658d] border border-slate-300 rounded-xl flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+              className="flex-1 bg-white hover:bg-slate-50 text-[#00658d] border border-slate-300 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
             >
               <Volume2 size={32} />
               <span className="text-sm font-semibold">Panggil Ulang</span>
@@ -300,7 +225,7 @@ export default function AdminPage() {
             <button
               onClick={() => handleCall()} // Skipping basically calls next
               disabled={loading || queues.length === 0}
-              className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 border border-red-200 rounded-xl flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+              className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 border border-red-200 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
             >
               <Ban size={32} />
               <span className="text-sm font-semibold">Lewati Antrian</span>
@@ -310,7 +235,7 @@ export default function AdminPage() {
       </div>
 
       {/* Queue Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col min-h-[300px]">
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col min-h-[300px]">
         <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
           <h3 className="text-lg sm:text-2xl font-semibold text-[#191c21]">
             Daftar Antrian

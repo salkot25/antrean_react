@@ -12,6 +12,9 @@ import LogsPage from "./pages/LogsPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryPage from "./pages/HistoryPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import CustomerSatisfactionPage from "./pages/CustomerSatisfactionPage";
+import SurveyRecapDashboardPage from "./pages/SurveyRecapDashboardPage";
+import AboutPage from "./pages/AboutPage";
 import AdminLayout from "./components/AdminLayout";
 import RequireAuth from "./components/RequireAuth";
 import ConnectionLogger from "./components/ConnectionLogger";
@@ -34,6 +37,15 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/change-password" element={<ChangePasswordPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route
+              path="/survey-kepuasan"
+              element={<CustomerSatisfactionPage />}
+            />
+            <Route
+              path="/survey-kepuasan-dashboard"
+              element={<SurveyRecapDashboardPage />}
+            />
+            <Route path="/about" element={<AboutPage />} />
             <Route element={<AdminLayout />}>
               <Route
                 path="/admin"

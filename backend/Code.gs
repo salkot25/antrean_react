@@ -6,6 +6,7 @@
 // Sheet: settings → A:key | B:value | C:description
 // Sheet: users    → A:id | B:username | C:fullName | D:email | E:role | F:status | G:passwordHash | H:lastLogin
 // Sheet: logs     → A:timestamp | B:level | C:module | D:event | E:message | F:connection_status | G:actor | H:path | I:details_json
+// Sheet: customer_satisfaction → A:created_at | B:input_date | C:phone_number | D:satisfaction | E:feedback | F:source
 // =============================================================
 
 // Column index constants for 'users' sheet (0-based)
@@ -28,7 +29,6 @@ var Q_CREATED_AT = 5; // F (was E)
 var Q_CALLED_AT = 6; // G (was F)
 var Q_COUNTER = 7; // H (was G)
 var Q_DATE = 8; // I (was H)
-var Q_DEVICE = 9; // J source_device
 
 // Column index constants for 'counters' sheet
 var C_ID = 0; // A
@@ -83,6 +83,8 @@ function doPost(e) {
       return handleClearLogs(request);
     } else if (action === "reset_queue_data") {
       return handleResetQueueData(request);
+    } else if (action === "save_survey") {
+      return handleSaveSurvey(request);
     }
 
     appLog(
@@ -121,7 +123,7 @@ function doGet(e) {
     if (action === "list") {
       return handleListQueue(e.parameter.service);
     } else if (action === "history_today") {
-      return handleHistoryToday(e.parameter.service, e.parameter.deviceId);
+      return handleHistoryToday(e.parameter.service);
     } else if (action === "display") {
       return handleDisplay();
     } else if (action === "get_config") {
@@ -134,6 +136,8 @@ function doGet(e) {
       return handleHealth();
     } else if (action === "get_logs") {
       return handleGetLogs(e.parameter || {});
+    } else if (action === "get_surveys") {
+      return handleGetSurveys(e.parameter || {});
     }
 
     appLog(
@@ -177,7 +181,7 @@ function handleInitSheets() {
   var firstCell = queuesSheet.getRange(1, 1).getValue();
   if (!firstCell || firstCell !== "id") {
     queuesSheet
-      .getRange(1, 1, 1, 10)
+      .getRange(1, 1, 1, 9)
       .setValues([
         [
           "id",
@@ -189,12 +193,11 @@ function handleInitSheets() {
           "called_at",
           "counter",
           "date",
-          "source_device",
         ],
       ]);
     // Format header row
     queuesSheet
-      .getRange(1, 1, 1, 10)
+      .getRange(1, 1, 1, 9)
       .setFontWeight("bold")
       .setBackground("#004482")
       .setFontColor("#ffffff");
@@ -209,19 +212,6 @@ function handleInitSheets() {
     queuesSheet.setColumnWidth(7, 150); // called_at
     queuesSheet.setColumnWidth(8, 200); // counter
     queuesSheet.setColumnWidth(9, 100); // date
-    queuesSheet.setColumnWidth(10, 180); // source_device
-  }
-
-  // Backward compatibility for older sheet schemas (without source_device column)
-  if (queuesSheet.getLastColumn() < 10) {
-    queuesSheet.insertColumnAfter(9);
-    queuesSheet.getRange(1, 10).setValue("source_device");
-    queuesSheet
-      .getRange(1, 10)
-      .setFontWeight("bold")
-      .setBackground("#004482")
-      .setFontColor("#ffffff");
-    queuesSheet.setColumnWidth(10, 180);
   }
 
   // ── counters sheet ──
@@ -334,6 +324,9 @@ function handleInitSheets() {
 
   // ── logs sheet ──
   ensureLogsSheetReady();
+
+  // ── customer satisfaction sheet ──
+  ensureSurveySheetReady();
 
   appLog(
     "INFO",
@@ -468,6 +461,122 @@ function ensureLogsSheetReady() {
   }
 
   return sheet;
+}
+
+function ensureSurveySheetReady() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("customer_satisfaction");
+
+  if (!sheet) {
+    sheet = ss.insertSheet("customer_satisfaction");
+  }
+
+  var firstCell = sheet.getRange(1, 1).getValue();
+  if (!firstCell || firstCell !== "created_at") {
+    sheet
+      .getRange(1, 1, 1, 6)
+      .setValues([
+        [
+          "created_at",
+          "input_date",
+          "phone_number",
+          "satisfaction",
+          "feedback",
+          "source",
+        ],
+      ]);
+
+    sheet
+      .getRange(1, 1, 1, 6)
+      .setFontWeight("bold")
+      .setBackground("#004482")
+      .setFontColor("#ffffff");
+
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 190);
+    sheet.setColumnWidth(2, 120);
+    sheet.setColumnWidth(3, 150);
+    sheet.setColumnWidth(4, 130);
+    sheet.setColumnWidth(5, 420);
+    sheet.setColumnWidth(6, 100);
+  }
+
+  return sheet;
+}
+
+function handleSaveSurvey(request) {
+  var inputDate = (request.inputDate || "").toString().trim();
+  var phoneNumber = (request.phoneNumber || "").toString().trim();
+  var satisfaction = (request.satisfaction || "").toString().trim();
+  var feedback = (request.feedback || "").toString().trim();
+  var source = (request.source || "kiosk").toString().trim();
+
+  if (!inputDate || !phoneNumber || !satisfaction) {
+    return jsonOut({
+      success: false,
+      error: "Tanggal, nomor HP, dan kepuasan wajib diisi.",
+    });
+  }
+
+  var sheet = ensureSurveySheetReady();
+  var createdAt = new Date().toISOString();
+
+  sheet.appendRow([
+    createdAt,
+    inputDate,
+    phoneNumber,
+    satisfaction,
+    feedback,
+    source,
+  ]);
+
+  appLog(
+    "INFO",
+    "survey",
+    "save_survey",
+    "Customer satisfaction survey saved",
+    "ONLINE",
+    "kiosk",
+    {
+      inputDate: inputDate,
+      satisfaction: satisfaction,
+      source: source,
+    },
+  );
+
+  return jsonOut({ success: true, createdAt: createdAt });
+}
+
+function handleGetSurveys(params) {
+  var sheet = ensureSurveySheetReady();
+  var rows = sheet.getDataRange().getValues();
+  if (!rows || rows.length <= 1) return jsonOut([]);
+
+  var limit = parseInt((params && params.limit) || "300", 10);
+  if (!isFinite(limit) || limit <= 0) limit = 300;
+  if (limit > 1000) limit = 1000;
+
+  var items = [];
+  for (var i = 1; i < rows.length; i++) {
+    var row = rows[i];
+    items.push({
+      createdAt: row[0] ? String(row[0]) : "",
+      inputDate: row[1] ? String(row[1]) : "",
+      phoneNumber: row[2] ? String(row[2]) : "",
+      satisfaction: row[3] ? String(row[3]) : "",
+      feedback: row[4] ? String(row[4]) : "",
+      source: row[5] ? String(row[5]) : "",
+    });
+  }
+
+  items.sort(function (a, b) {
+    var ax = a.createdAt || "";
+    var bx = b.createdAt || "";
+    if (ax === bx) return 0;
+    return ax > bx ? -1 : 1;
+  });
+
+  return jsonOut(items.slice(0, limit));
 }
 
 function handleLogin(request) {
@@ -724,7 +833,6 @@ function handleCreateQueue(request) {
 
   var service = request.service || "CS";
   var customerName = request.customerName || "";
-  var deviceId = request.deviceId || "";
 
   var sessionStart = getSessionStart();
   var today = new Date();
@@ -755,7 +863,7 @@ function handleCreateQueue(request) {
   var formattedNum = service + "-" + ("000" + newNum).slice(-3);
   var id = Utilities.getUuid();
 
-  // Columns: id | number | service | customer_name | status | created_at | called_at | counter | date | source_device
+  // Columns: id | number | service | customer_name | status | created_at | called_at | counter | date
   sheet.appendRow([
     id,
     formattedNum,
@@ -766,7 +874,6 @@ function handleCreateQueue(request) {
     "",
     "",
     dateStr,
-    deviceId,
   ]);
 
   appLog(
@@ -917,7 +1024,7 @@ function handleListQueue(serviceFilter) {
   return jsonOut(result);
 }
 
-function handleHistoryToday(serviceFilter, deviceIdFilter) {
+function handleHistoryToday(serviceFilter) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("queues");
   if (!sheet) return jsonOut([]);
 
@@ -947,7 +1054,6 @@ function handleHistoryToday(serviceFilter, deviceIdFilter) {
     var rowService = data[i][Q_SERVICE];
     var rowDate = data[i][Q_DATE];
     var createdAt = data[i][Q_CREATED_AT];
-    var rowDevice = data[i][Q_DEVICE] || "";
 
     var rowDateStr = toYmd(rowDate);
     var createdDateStr = toYmd(createdAt);
@@ -955,7 +1061,6 @@ function handleHistoryToday(serviceFilter, deviceIdFilter) {
 
     if (!dateMatch) continue;
     if (serviceFilter && rowService !== serviceFilter) continue;
-    if (deviceIdFilter && String(rowDevice) !== String(deviceIdFilter)) continue;
 
     result.push({
       id: data[i][Q_ID],
@@ -969,7 +1074,6 @@ function handleHistoryToday(serviceFilter, deviceIdFilter) {
         : "",
       counter: data[i][Q_COUNTER] || "",
       date: rowDate || todayStr,
-      device_id: rowDevice,
     });
   }
 
@@ -1465,22 +1569,37 @@ function appLog(
 function trimLogsIfNeeded(sheet) {
   try {
     var currentRows = sheet.getLastRow();
-    var dataRows = Math.max(0, currentRows - 1); // exclude header
+    var frozenRows = Math.max(1, sheet.getFrozenRows());
+    var dataStartRow = frozenRows + 1;
+    var dataRows = Math.max(0, currentRows - frozenRows); // exclude frozen/header rows
     if (dataRows <= LOGS_MAX_ROWS) return;
 
     var toDelete = Math.min(dataRows - LOGS_MAX_ROWS, LOGS_PRUNE_BATCH);
-    // Delete oldest log rows first, preserving header row
-    sheet.deleteRows(2, toDelete);
+    // Delete oldest log rows first, preserving frozen/header rows.
+    sheet.deleteRows(dataStartRow, toDelete);
   } catch (e) {
     // Never throw from retention to avoid blocking main request path.
   }
 }
 
 function clearDataRows(sheet) {
+  var frozenRows = Math.max(1, sheet.getFrozenRows());
+  var dataStartRow = frozenRows + 1;
   var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return 0;
-  var count = lastRow - 1;
-  sheet.deleteRows(2, count);
+
+  if (lastRow < dataStartRow) return 0;
+
+  var count = lastRow - dataStartRow + 1;
+  try {
+    sheet.deleteRows(dataStartRow, count);
+  } catch (e) {
+    // Some sheets with frozen-row configurations may reject deleteRows.
+    // Fallback to clearing cell values while preserving structure.
+    sheet
+      .getRange(dataStartRow, 1, count, sheet.getLastColumn())
+      .clearContent();
+  }
+
   return count;
 }
 
@@ -1494,11 +1613,15 @@ function parseRetentionDays(rawValue, defaultValue) {
 
 function deleteLogsOlderThanDays(retentionDays) {
   var sheet = ensureLogsSheetReady();
+  var frozenRows = Math.max(1, sheet.getFrozenRows());
+  var dataStartRow = frozenRows + 1;
   var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return 0;
+  if (lastRow < dataStartRow) return 0;
 
   var cutoffMs = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  var timestamps = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  var timestamps = sheet
+    .getRange(dataStartRow, 1, lastRow - dataStartRow + 1, 1)
+    .getValues();
   var deleteCount = 0;
 
   for (var i = 0; i < timestamps.length; i++) {
@@ -1517,7 +1640,7 @@ function deleteLogsOlderThanDays(retentionDays) {
   }
 
   if (deleteCount > 0) {
-    sheet.deleteRows(2, deleteCount);
+    sheet.deleteRows(dataStartRow, deleteCount);
   }
 
   return deleteCount;

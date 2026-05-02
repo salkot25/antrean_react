@@ -398,11 +398,11 @@ export default function UserManagementPage() {
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="p-safe-margin space-y-xl min-h-screen bg-background">
+    <div className="p-safe-margin space-y-xl min-h-screen bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb]">
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 transition-all ${
+          className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-medium flex items-center gap-2 transition-all ${
             toast.type === "success"
               ? "bg-secondary text-white"
               : "bg-error text-white"
@@ -413,30 +413,30 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-sm">
+      {/* Header (Queue Control Style) */}
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div>
-          <h1 className="font-heading-lg text-on-surface flex items-center gap-2">
-            <Users size={28} className="text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight flex items-center gap-2">
+            <Users size={26} className="text-primary" />
             User Management
           </h1>
-          <p className="text-sm text-on-surface-variant mt-1">
+          <p className="text-sm sm:text-base text-slate-500 mt-1">
             Kelola akses sistem, peran, dan status untuk seluruh personel.
           </p>
         </div>
         {currentUser?.role === "admin" && (
           <button
             onClick={openCreate}
-            className="bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-full flex items-center gap-2 hover:bg-primary-container transition-colors shadow-sm"
+            className="bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-primary-container transition-colors shadow-sm"
           >
             <UserPlus size={16} />
             Tambah User Baru
           </button>
         )}
-      </div>
+      </header>
 
       {/* Toolbar */}
-      <div className="bg-white p-sm rounded-xl border border-surface-variant shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white/95 backdrop-blur-sm p-sm rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="relative w-full sm:max-w-xs">
           <Search
             size={16}
@@ -476,7 +476,7 @@ export default function UserManagementPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-surface-variant shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-48 gap-3 text-on-surface-variant">
             <Loader2 size={22} className="animate-spin" />
@@ -494,7 +494,7 @@ export default function UserManagementPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-surface-container-low border-b border-surface-variant">
+              <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="py-4 px-6 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
                     User
@@ -515,11 +515,11 @@ export default function UserManagementPage() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-variant">
+              <tbody className="divide-y divide-slate-200">
                 {paginated.map((u) => (
                   <tr
                     key={u.id}
-                    className="hover:bg-surface-container-low transition-colors group"
+                    className="hover:bg-slate-50 transition-colors group"
                   >
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
@@ -598,7 +598,7 @@ export default function UserManagementPage() {
 
         {/* Pagination */}
         {!loading && filtered.length > PAGE_SIZE && (
-          <div className="px-6 py-4 border-t border-surface-variant flex items-center justify-between bg-surface-container-lowest">
+          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50">
             <span className="text-xs text-on-surface-variant">
               Menampilkan {(page - 1) * PAGE_SIZE + 1}–
               {Math.min(page * PAGE_SIZE, filtered.length)} dari{" "}
@@ -674,7 +674,7 @@ export default function UserManagementPage() {
       {/* Delete Confirm Modal */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-surface-variant">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm border border-slate-200">
             <div className="p-6 space-y-4">
               <div className="w-12 h-12 rounded-full bg-error-container flex items-center justify-center text-error mx-auto">
                 <Trash2 size={22} />

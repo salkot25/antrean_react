@@ -10,6 +10,7 @@ import {
   ScrollText,
   Menu,
   X,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getConfig } from "../api";
@@ -20,12 +21,36 @@ export default function AdminLayout() {
   const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const navItems = [
-    { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Queue Control", path: "/admin/queue", icon: MousePointerClick },
-    { name: "Service Config", path: "/admin/config", icon: Settings },
-    { name: "User Management", path: "/admin/users", icon: Users },
-    { name: "Logs", path: "/admin/logs", icon: ScrollText },
+  const navGroups = [
+    {
+      label: "Manajemen Antrean",
+      items: [
+        { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
+        {
+          name: "Queue Control",
+          path: "/admin/queue",
+          icon: MousePointerClick,
+        },
+        { name: "Service Config", path: "/admin/config", icon: Settings },
+      ],
+    },
+    {
+      label: "Pengguna & Sistem",
+      items: [
+        { name: "User Management", path: "/admin/users", icon: Users },
+        { name: "Logs", path: "/admin/logs", icon: ScrollText },
+      ],
+    },
+    {
+      label: "Survey & Analitik",
+      items: [
+        {
+          name: "Dashboard Survey",
+          path: "/survey-kepuasan-dashboard",
+          icon: BarChart3,
+        },
+      ],
+    },
   ];
 
   const handleLogout = () => {
@@ -52,11 +77,11 @@ export default function AdminLayout() {
       .slice(0, 2);
 
   return (
-    <div className="bg-[#F5F7FA] text-[#191c21] font-['Inter'] h-screen w-full flex overflow-hidden">
+    <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] text-[#191c21] font-['Inter'] h-screen w-full flex overflow-hidden">
       {/* Mobile sidebar toggle */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="sm:hidden fixed top-3 left-3 z-[70] inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm"
+        className="sm:hidden fixed top-3 left-3 z-[70] inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
         aria-label="Buka menu"
       >
         <Menu size={20} />
@@ -73,7 +98,7 @@ export default function AdminLayout() {
 
       {/* SideNavBar */}
       <nav
-        className={`fixed left-0 top-0 h-full w-[280px] bg-slate-50 border-r border-slate-200 flex flex-col py-6 gap-4 z-[60] transition-transform duration-200 sm:translate-x-0 ${
+        className={`fixed left-0 top-0 h-full w-[280px] bg-white/95 backdrop-blur-sm border-r border-slate-200 flex flex-col py-6 gap-4 z-[60] transition-transform duration-200 sm:translate-x-0 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -104,59 +129,72 @@ export default function AdminLayout() {
         </div>
 
         {/* Navigation Links */}
-        <div className="flex-1 flex flex-col gap-2 px-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              location.pathname === item.path ||
-              (item.path === "/admin/queue" &&
-                location.pathname === "/admin/queue/");
-
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                onClick={() => setIsSidebarOpen(false)}
-                className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
-                    ? "bg-white text-[#005BAC] shadow-sm border-l-4 border-[#005BAC] scale-[0.98] duration-150"
-                    : "text-slate-600 hover:bg-slate-200 cursor-pointer"
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-['Inter'] font-medium text-sm">
-                  {item.name}
-                </span>
-              </Link>
-            );
-          })}
+        <div className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
+          {navGroups.map((group) => (
+            <div key={group.label} className="mb-1">
+              <p className="mx-4 mb-1 mt-2 text-[10px] uppercase tracking-widest font-semibold text-slate-400">
+                {group.label}
+              </p>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  location.pathname === item.path ||
+                  (item.path === "/admin/queue" &&
+                    location.pathname === "/admin/queue/");
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    onClick={() => setIsSidebarOpen(false)}
+                    className={`mx-2 flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                      isActive
+                        ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+                        : "text-slate-600 hover:bg-slate-100 cursor-pointer"
+                    }`}
+                  >
+                    <Icon size={18} />
+                    <span className="font-['Inter'] font-medium text-sm">
+                      {item.name}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
-        {/* Footer — user info + logout */}
-        <div className="px-4 mt-auto border-t border-slate-200 pt-4 flex flex-col gap-1">
-          <div className="px-2 py-2 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
-              {initials(user?.fullName || user?.username)}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-[#005BAC] truncate">
-                {user?.fullName || user?.username || "Admin"}
-              </p>
-              <p className="text-xs text-slate-500 flex items-center gap-1">
-                <ShieldCheck size={11} />
-                {user?.role
-                  ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
-                  : ""}
-              </p>
-            </div>
+        {/* Footer — identity row + logout icon, same as kiosk sidebar */}
+        <div className="px-4 mt-auto border-t border-slate-200 pt-4 pb-4 bg-slate-50">
+          <div className="flex items-center gap-2">
+            <Link
+              to="/admin/users"
+              onClick={() => setIsSidebarOpen(false)}
+              className="flex-1 px-2 py-2 flex items-center gap-3 rounded-xl hover:bg-slate-100 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
+                {initials(user?.fullName || user?.username)}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-[#005BAC] truncate">
+                  {user?.fullName || user?.username || "Admin"}
+                </p>
+                <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <ShieldCheck size={11} />
+                  {user?.role
+                    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+                    : ""}
+                </p>
+              </div>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-slate-600 w-full mx-2 flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"
-          >
-            <LogOut size={20} />
-            <span className="font-['Inter'] font-medium text-sm">Logout</span>
-          </button>
         </div>
       </nav>
 

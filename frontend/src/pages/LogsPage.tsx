@@ -42,6 +42,7 @@ export default function LogsPage() {
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const [limit, setLimit] = useState(100);
   const [level, setLevel] = useState("");
@@ -77,17 +78,13 @@ export default function LogsPage() {
     fetchLogs();
   }, []);
 
-  const handleClearLogs = async () => {
-    const ok = window.confirm(
-      "Hapus semua logs? Tindakan ini tidak dapat dibatalkan.",
-    );
-    if (!ok) return;
-
+  const executeClearLogs = async () => {
     setClearing(true);
     setError("");
     try {
       await clearLogs(user?.username || "system");
       await fetchLogs();
+      setShowClearConfirm(false);
     } catch {
       setError("Gagal menghapus logs.");
     } finally {
@@ -114,14 +111,57 @@ export default function LogsPage() {
   }, [logs]);
 
   return (
-    <div className="p-safe-margin space-y-lg bg-background min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="p-safe-margin space-y-lg bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] min-h-screen">
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center px-4">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+            <div className="relative p-5 sm:p-6 bg-gradient-to-br from-red-50 via-white to-rose-50 border-b border-slate-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+                  <Trash2 size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Hapus Semua Logs?
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Seluruh data logs akan dihapus dan tindakan ini tidak dapat
+                    dibatalkan.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 sm:p-6 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                disabled={clearing}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeClearLogs}
+                disabled={clearing}
+                className="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              >
+                <Trash2 size={14} className={clearing ? "animate-pulse" : ""} />
+                {clearing ? "Menghapus..." : "Ya, Hapus Logs"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div>
-          <h1 className="font-heading-lg text-on-surface flex items-center gap-2">
-            <Database size={26} className="text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight flex items-center gap-2">
+            <Database size={24} className="text-primary" />
             Application Logs
           </h1>
-          <p className="text-sm text-on-surface-variant mt-1">
+          <p className="text-sm sm:text-base text-slate-500 mt-1">
             Pantau event penting aplikasi, error, dan status koneksi.
           </p>
         </div>
@@ -132,9 +172,9 @@ export default function LogsPage() {
             </span>
           )}
           <button
-            onClick={handleClearLogs}
+            onClick={() => setShowClearConfirm(true)}
             disabled={clearing || loading}
-            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center gap-2"
           >
             <Trash2 size={15} className={clearing ? "animate-pulse" : ""} />
             Hapus Logs
@@ -142,16 +182,16 @@ export default function LogsPage() {
           <button
             onClick={fetchLogs}
             disabled={loading || clearing}
-            className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-container transition-colors disabled:opacity-60 flex items-center gap-2"
+            className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition-colors disabled:opacity-60 flex items-center gap-2"
           >
             <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-white border border-surface-variant rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
           <CheckCircle2 className="text-green-600" size={22} />
           <div>
             <p className="text-xs text-outline uppercase tracking-wider font-semibold">
@@ -160,7 +200,7 @@ export default function LogsPage() {
             <p className="text-xl font-bold text-on-surface">{stats.info}</p>
           </div>
         </div>
-        <div className="bg-white border border-surface-variant rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
           <AlertTriangle className="text-amber-600" size={22} />
           <div>
             <p className="text-xs text-outline uppercase tracking-wider font-semibold">
@@ -169,7 +209,7 @@ export default function LogsPage() {
             <p className="text-xl font-bold text-on-surface">{stats.warn}</p>
           </div>
         </div>
-        <div className="bg-white border border-surface-variant rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-3xl p-4 flex items-center gap-3 shadow-sm">
           <AlertCircle className="text-red-600" size={22} />
           <div>
             <p className="text-xs text-outline uppercase tracking-wider font-semibold">
@@ -180,7 +220,7 @@ export default function LogsPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-surface-variant rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-3xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3 shadow-sm">
         <div>
           <label className="block text-xs font-semibold text-on-surface-variant mb-1">
             Limit
@@ -276,20 +316,20 @@ export default function LogsPage() {
               setQuery("");
               setLimit(100);
             }}
-            className="px-3 py-2 rounded-lg border border-surface-variant text-sm text-on-surface-variant hover:bg-surface-container-low"
+            className="px-3 py-2 rounded-xl border border-slate-300 text-sm text-on-surface-variant hover:bg-slate-50"
           >
             Reset Filter
           </button>
           <button
             onClick={fetchLogs}
-            className="px-4 py-2 rounded-lg bg-secondary text-white text-sm font-semibold hover:opacity-90"
+            className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container"
           >
             Terapkan
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-surface-variant rounded-xl overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         {error && (
           <div className="p-3 bg-red-50 border-b border-red-200 text-sm text-red-700">
             {error}
@@ -298,7 +338,7 @@ export default function LogsPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px] text-left">
-            <thead className="bg-surface-container-low border-b border-surface-variant">
+            <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
                   Waktu
@@ -340,7 +380,7 @@ export default function LogsPage() {
                 logs.map((row, idx) => (
                   <tr
                     key={`${row.timestamp}-${idx}`}
-                    className="border-b border-surface-variant hover:bg-surface-container-low"
+                    className="border-b border-slate-200 hover:bg-slate-50"
                   >
                     <td className="px-4 py-3 text-xs text-on-surface-variant whitespace-nowrap">
                       {row.timestamp}

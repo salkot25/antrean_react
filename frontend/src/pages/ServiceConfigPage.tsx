@@ -156,26 +156,33 @@ export default function ServiceConfigPage() {
   };
 
   return (
-    <div className="bg-background text-on-background min-h-full p-sm md:p-lg lg:p-safe-margin">
+    <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] text-on-background min-h-full p-sm md:p-lg lg:p-safe-margin">
       <div className="max-w-5xl mx-auto">
         {!hasLoadedConfig && (
-          <div className="mb-md p-4 rounded-xl border border-outline-variant bg-surface-container-lowest font-label-sm text-on-surface-variant">
+          <div className="mb-md p-4 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm font-label-sm text-on-surface-variant">
             Memuat konfigurasi dari server...
           </div>
         )}
 
-        {/* Page Header */}
-        <div className="mb-lg">
-          <h1 className="font-heading-lg text-on-background">Service Config</h1>
-          <p className="font-body-lg text-on-surface-variant mt-1">
-            Pengaturan tampilan TV dan fungsionalitas Kiosk.
-          </p>
-        </div>
+        {/* Page Header (Queue Control Style) */}
+        <header className="mb-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
+              Service Config
+            </h1>
+            <p className="text-sm sm:text-base text-slate-500 mt-1">
+              Pengaturan tampilan TV dan fungsionalitas kiosk.
+            </p>
+          </div>
+          <div className="text-xs sm:text-sm text-slate-500">
+            Sesuaikan konfigurasi sebelum disimpan.
+          </div>
+        </header>
 
         {/* Notification Message */}
         {message && (
           <div
-            className={`mb-md p-4 rounded-xl flex items-center gap-3 border font-label-sm ${
+            className={`mb-md p-4 rounded-2xl flex items-center gap-3 border font-label-sm ${
               message.type === "success"
                 ? "bg-green-50 text-green-800 border-green-200"
                 : "bg-error-container text-on-error-container border-error/20"
@@ -190,8 +197,8 @@ export default function ServiceConfigPage() {
           {/* ── Left column (8 cols) ── */}
           <div className="lg:col-span-8 space-y-md">
             {/* General Configuration Card */}
-            <section className="bg-surface-bright rounded-xl border border-surface-variant shadow-sm overflow-hidden">
-              <div className="px-md py-sm border-b border-surface-variant bg-surface-container-lowest">
+            <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <Building2 size={22} className="text-secondary" />
                   General Configuration
@@ -252,7 +259,7 @@ export default function ServiceConfigPage() {
                   </div>
                 </div>
 
-                <div className="mt-sm border border-outline-variant rounded-lg p-sm bg-surface-container-lowest space-y-sm">
+                <div className="mt-sm border border-slate-200 rounded-2xl p-sm bg-slate-50 space-y-sm">
                   <h3 className="font-label-sm text-on-surface flex items-center gap-2">
                     <Database size={16} className="text-secondary" />
                     Retensi Logs
@@ -295,15 +302,18 @@ export default function ServiceConfigPage() {
                       value={logsRetentionDays}
                       onChange={(e) =>
                         setLogsRetentionDays(
-                          Math.max(1, Math.min(3650, Number(e.target.value) || 1)),
+                          Math.max(
+                            1,
+                            Math.min(3650, Number(e.target.value) || 1),
+                          ),
                         )
                       }
                       disabled={!logsAutoCleanup}
                       className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface disabled:opacity-60"
                     />
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Hapus manual tetap tersedia dari halaman Logs dengan tombol
-                      "Hapus Logs" (fitur existing).
+                      Hapus manual tetap tersedia dari halaman Logs dengan
+                      tombol "Hapus Logs" (fitur existing).
                     </p>
                   </div>
                 </div>
@@ -311,8 +321,8 @@ export default function ServiceConfigPage() {
             </section>
 
             {/* Display & Media Card */}
-            <section className="bg-surface-bright rounded-xl border border-surface-variant shadow-sm overflow-hidden">
-              <div className="px-md py-sm border-b border-surface-variant bg-surface-container-lowest flex justify-between items-center">
+            <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-md py-sm border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <MonitorPlay size={22} className="text-secondary" />
                   Display &amp; Media
@@ -425,8 +435,8 @@ export default function ServiceConfigPage() {
             </section>
 
             {/* Kiosk Printer Card */}
-            <section className="bg-surface-bright rounded-xl border border-surface-variant shadow-sm overflow-hidden">
-              <div className="px-md py-sm border-b border-surface-variant bg-surface-container-lowest">
+            <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <Printer size={22} className="text-secondary" />
                   Kiosk Printer
@@ -544,8 +554,8 @@ export default function ServiceConfigPage() {
           {/* ── Right column (4 cols) ── */}
           <div className="lg:col-span-4 space-y-md">
             {/* Audio & Voice Card */}
-            <section className="bg-surface-bright rounded-xl border border-surface-variant shadow-sm overflow-hidden">
-              <div className="px-md py-sm border-b border-surface-variant bg-surface-container-lowest">
+            <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <Volume2 size={22} className="text-secondary" />
                   Audio &amp; Voice
@@ -631,18 +641,18 @@ export default function ServiceConfigPage() {
         </div>
 
         {/* Action Bar */}
-        <div className="mt-lg pt-md border-t border-surface-variant flex justify-end gap-sm">
+        <div className="mt-lg pt-md border-t border-slate-200 flex justify-end gap-sm">
           <button
             onClick={fetchConfig}
             disabled={loading}
-            className="py-2 px-6 border border-outline rounded-lg font-label-sm text-on-surface hover:bg-surface-container transition-colors"
+            className="py-2 px-6 border border-slate-300 rounded-xl font-label-sm text-on-surface hover:bg-slate-50 transition-colors"
           >
             Discard
           </button>
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="py-2 px-6 bg-primary text-on-primary rounded-lg font-label-sm hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center gap-2 disabled:opacity-70"
+            className="py-2 px-6 bg-primary text-on-primary rounded-xl font-label-sm hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center gap-2 disabled:opacity-70"
           >
             {saving ? (
               <RefreshCw size={16} className="animate-spin" />

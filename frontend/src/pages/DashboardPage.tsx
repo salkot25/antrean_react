@@ -207,36 +207,32 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="bg-background min-h-screen flex flex-col">
-      {/* ── TopBar ─────────────────────────────── */}
-      <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-3 sm:px-6 bg-white border-b border-surface-variant shadow-sm">
+    <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] min-h-screen flex flex-col">
+      {/* ── Header (Queue Control Style) ───────────────────── */}
+      <header className="mx-4 mt-4 sm:mx-safe-margin sm:mt-safe-margin flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-3 min-w-0">
-          <Zap size={22} className="text-primary shrink-0" fill="#002e5b" />
-          <h1 className="font-heading-md text-primary truncate">Dashboard</h1>
+          <Zap size={24} className="text-primary shrink-0" />
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-sm sm:text-base text-slate-500 mt-1">
+              Ringkasan operasional antrean secara real-time.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-4 text-on-surface-variant shrink-0">
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-outline">
-            <Clock size={14} />
-            <span>
-              Diperbarui:{" "}
-              {lastRefreshed.toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })}
-            </span>
-          </div>
-          <div className="flex sm:hidden items-center gap-1 text-[10px] text-outline">
-            <Clock size={12} />
-            <span>{lastRefreshed.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</span>
-          </div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-xs sm:text-sm text-slate-500">
+            Diperbarui: {lastRefreshed.toLocaleTimeString("id-ID")}
+          </span>
           <button
             onClick={fetchData}
             disabled={loading}
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            className="bg-primary text-white px-4 py-2 rounded-xl border border-blue-900/20 transition-all flex items-center gap-2 text-sm font-medium disabled:opacity-60"
             title="Refresh data"
           >
-            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            Refresh
           </button>
         </div>
       </header>
@@ -244,7 +240,7 @@ export default function DashboardPage() {
       <div className="flex-1 p-4 sm:p-safe-margin space-y-xl">
         {/* ── Summary Cards ──────────────────────── */}
         <section className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-md">
-          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-primary flex items-center gap-3 sm:gap-md">
+          <div className="bg-white/95 backdrop-blur-sm p-3 sm:p-sm rounded-3xl shadow-sm border border-slate-200 flex items-center gap-3 sm:gap-md">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
               <Ticket size={20} />
             </div>
@@ -258,7 +254,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-secondary flex items-center gap-3 sm:gap-md">
+          <div className="bg-white/95 backdrop-blur-sm p-3 sm:p-sm rounded-3xl shadow-sm border border-slate-200 flex items-center gap-3 sm:gap-md">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
               <UserCheck size={20} />
             </div>
@@ -272,7 +268,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-[#723100] flex items-center gap-3 sm:gap-md">
+          <div className="bg-white/95 backdrop-blur-sm p-3 sm:p-sm rounded-3xl shadow-sm border border-slate-200 flex items-center gap-3 sm:gap-md">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#723100]/10 flex items-center justify-center text-[#723100] shrink-0">
               <Hourglass size={20} />
             </div>
@@ -286,7 +282,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-3 sm:p-sm rounded-xl shadow-sm border-l-4 border-surface-tint flex items-center gap-3 sm:gap-md">
+          <div className="bg-white/95 backdrop-blur-sm p-3 sm:p-sm rounded-3xl shadow-sm border border-slate-200 flex items-center gap-3 sm:gap-md">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-surface-tint/10 flex items-center justify-center text-surface-tint shrink-0">
               <Timer size={20} />
             </div>
@@ -312,7 +308,7 @@ export default function DashboardPage() {
                   <BarChart2 size={22} className="text-primary" />
                   Status Antrian Live
                 </h2>
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                   Live
                 </span>
@@ -326,7 +322,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={svc.key}
-                      className="bg-white rounded-xl shadow-sm overflow-hidden border border-surface-variant flex flex-col"
+                      className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-200 flex flex-col"
                     >
                       <div className={`h-1.5 ${svc.accentColor}`} />
                       <div className="p-md flex-1">
@@ -344,7 +340,7 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="bg-surface-container-low px-md py-sm border-t border-surface-variant flex justify-between items-center">
+                      <div className="bg-slate-50 px-md py-sm border-t border-slate-200 flex justify-between items-center rounded-b-3xl">
                         <span className="text-xs text-on-surface-variant">
                           Menunggu: <strong>{waiting}</strong>
                         </span>
@@ -357,7 +353,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Traffic Chart */}
-            <div className="bg-white p-xl rounded-xl shadow-sm border border-surface-variant">
+            <div className="bg-white p-xl rounded-3xl shadow-sm border border-slate-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-xl">
                 <div>
                   <h2 className="font-heading-md text-on-surface">
@@ -368,7 +364,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <button className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-surface-variant text-outline hover:bg-surface-container-low transition-colors">
+                  <button className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-slate-200 text-outline hover:bg-slate-50 transition-colors">
                     Download CSV
                   </button>
                   <button className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-primary-container text-white hover:bg-primary transition-colors">
@@ -423,7 +419,7 @@ export default function DashboardPage() {
                 })}
               </div>
 
-              <div className="mt-4 border-t border-surface-variant pt-4 flex items-center justify-between text-[10px] text-outline font-bold uppercase tracking-widest">
+              <div className="mt-4 border-t border-slate-200 pt-4 flex items-center justify-between text-[10px] text-outline font-bold uppercase tracking-widest">
                 <span>08:00</span>
                 <span>Puncak: 10:00 – 11:30</span>
                 <span>17:00</span>
@@ -434,8 +430,8 @@ export default function DashboardPage() {
           {/* ── Right (30%) ── */}
           <div className="lg:col-span-3 space-y-xl">
             {/* Recent Activity Feed */}
-            <div className="bg-white rounded-xl shadow-sm border border-surface-variant overflow-hidden flex flex-col min-h-[460px]">
-              <div className="p-md border-b border-surface-variant bg-surface-container-lowest">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[460px]">
+              <div className="p-md border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface">
                   Aktivitas Terkini
                 </h2>
@@ -454,7 +450,7 @@ export default function DashboardPage() {
                   activity.map((item) => (
                     <div
                       key={item.id}
-                      className="flex gap-sm items-start p-sm bg-surface-container-low rounded-lg border border-surface-variant"
+                      className="flex gap-sm items-start p-sm bg-slate-50 rounded-xl border border-slate-200"
                     >
                       <div
                         className={`p-2 rounded-full shrink-0 ${item.iconBg}`}
@@ -477,7 +473,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              <div className="p-md border-t border-surface-variant text-center">
+              <div className="p-md border-t border-slate-200 text-center">
                 <button className="text-[10px] font-bold text-primary-container uppercase tracking-widest hover:underline">
                   Lihat Log Lengkap
                 </button>
@@ -485,8 +481,8 @@ export default function DashboardPage() {
             </div>
 
             {/* Queue Breakdown Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-surface-variant overflow-hidden">
-              <div className="p-md border-b border-surface-variant bg-surface-container-lowest">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-md border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface">
                   Perincian Antrian
                 </h2>
@@ -523,7 +519,7 @@ export default function DashboardPage() {
                 ].map((row) => (
                   <div
                     key={row.label}
-                    className="flex items-center gap-sm p-sm bg-surface-container-low rounded-lg"
+                    className="flex items-center gap-sm p-sm bg-slate-50 rounded-xl"
                   >
                     <div
                       className={`w-8 h-8 rounded-full ${row.color} bg-opacity-10 flex items-center justify-center ${row.textColor}`}
@@ -535,7 +531,7 @@ export default function DashboardPage() {
                         {row.label}
                       </p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <div className="flex-1 bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+                        <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
                           <div
                             className={`h-full ${row.color} rounded-full transition-all`}
                             style={{
@@ -564,19 +560,19 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Footer Marquee ──────────────────────── */}
-        <footer className="h-12 bg-primary-container rounded-lg flex items-center overflow-hidden shadow-lg">
+        <footer className="h-12 bg-primary rounded-xl flex items-center overflow-hidden shadow-sm border border-blue-900/20">
           <div className="px-md h-full bg-primary flex items-center text-white font-bold text-xs uppercase tracking-widest whitespace-nowrap border-r border-white/10 gap-2">
             <Zap size={16} fill="white" />
             Sistem Antrean PLN
           </div>
           <div className="flex-1 px-md overflow-hidden">
-            <div className="animate-[marquee_30s_linear_infinite] whitespace-nowrap text-on-primary-container text-sm font-medium">
+            <div className="animate-[marquee_30s_linear_infinite] whitespace-nowrap text-white text-sm font-medium">
               <span className="mr-16">{runningText}</span>
               <span className="mr-16 opacity-40">•</span>
               <span className="mr-16">{runningText}</span>
             </div>
           </div>
-          <div className="px-md text-[10px] text-primary-fixed font-mono">
+          <div className="px-md text-[10px] text-white/90 font-mono">
             <CheckCircle2 size={12} className="inline mr-1" />
             ONLINE
           </div>

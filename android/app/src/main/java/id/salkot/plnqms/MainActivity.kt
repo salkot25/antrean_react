@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var printBridge: PrintBridgeInterface
 
     // Kiosk URL – pointing to the deployed React app
-    private val kioskUrl = "https://antrean.salkot.online"
+    private val kioskUrl = "https://antrean.salkot.online/ambil"
 
     private val bluetoothPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
