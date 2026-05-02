@@ -29,17 +29,24 @@ type DisplayTicket = PrintedTicket & { status: TicketStatus };
 
 const LOCAL_STORAGE_KEY = "pln_printed_tickets";
 
-function loadTodayTickets(): PrintedTicket[] {
+function loadStoredTickets(): PrintedTicket[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) return [];
-    const all = JSON.parse(raw) as PrintedTicket[];
-    const todayPrefix = new Date().toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+    const all = raw ? (JSON.parse(raw) as PrintedTicket[]) : [];
+
+    // Backward compatibility: include last printed ticket if history list was empty.
+    const rawLast = localStorage.getItem("pln_last_printed_ticket");
+    const last = rawLast ? (JSON.parse(rawLast) as PrintedTicket) : null;
+    const combined = [...all, ...(last ? [last] : [])];
+
+    const map = new Map<string, PrintedTicket>();
+    combined.forEach((t) => {
+      if (!t?.number || !t?.service || !t?.printedAt) return;
+      const key = `${t.number}|${t.service}|${t.printedAt}`;
+      map.set(key, t);
     });
-    return all.filter((t) => t.printedAt.startsWith(todayPrefix));
+
+    return Array.from(map.values());
   } catch {
     return [];
   }
@@ -55,13 +62,15 @@ export default function HistoryPage() {
   const refreshStatuses = useCallback(async () => {
     setLoading(true);
     try {
-      const local = loadTodayTickets();
+      const local = loadStoredTickets();
       if (local.length === 0) {
         setTickets([]);
         return;
       }
 
-      setTickets(local.map((t) => ({ ...t, status: "loading" as TicketStatus })));
+      setTickets(
+        local.map((t) => ({ ...t, status: "loading" as TicketStatus })),
+      );
 
       const waitingData = await getWaitingQueues();
       const waitingNumbers = new Set<string>(
@@ -73,12 +82,16 @@ export default function HistoryPage() {
       setTickets(
         local.map((t) => ({
           ...t,
-          status: (waitingNumbers.has(t.number) ? "waiting" : "called") as TicketStatus,
+          status: (waitingNumbers.has(t.number)
+            ? "waiting"
+            : "called") as TicketStatus,
         })),
       );
     } catch {
-      const local = loadTodayTickets();
-      setTickets(local.map((t) => ({ ...t, status: "waiting" as TicketStatus })));
+      const local = loadStoredTickets();
+      setTickets(
+        local.map((t) => ({ ...t, status: "waiting" as TicketStatus })),
+      );
     } finally {
       setLoading(false);
     }
@@ -112,7 +125,9 @@ export default function HistoryPage() {
       if (isBridgeAvailable()) {
         const result = await requestBridgePrint(payload, 8000);
         if (!result || result.status !== "success") {
-          alert(`Cetak ulang gagal (${result?.reason ?? "unknown"}). Cek Bluetooth/printer.`);
+          alert(
+            `Cetak ulang gagal (${result?.reason ?? "unknown"}). Cek Bluetooth/printer.`,
+          );
         }
       } else {
         browserPrint();
@@ -148,7 +163,7 @@ export default function HistoryPage() {
 
       <main className="flex-1 w-full max-w-md mx-auto px-4 pt-6 pb-12 flex flex-col gap-5">
         <p className="text-sm text-gray-500 text-center">
-          Nomor antrian yang dicetak hari ini dari perangkat ini
+          Riwayat nomor antrian yang pernah dicetak di perangkat ini
         </p>
 
         {loading && tickets.length === 0 ? (
@@ -159,7 +174,9 @@ export default function HistoryPage() {
         ) : tickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
             <Inbox size={48} strokeWidth={1.2} />
-            <p className="text-sm font-medium">Belum ada tiket dicetak hari ini</p>
+            <p className="text-sm font-medium">
+              Belum ada riwayat tiket dicetak
+            </p>
             <button
               onClick={() => navigate("/")}
               className="mt-2 text-[#002e5b] text-sm font-semibold hover:underline"
@@ -252,7 +269,9 @@ function TicketCard({
           {SERVICE_NAMES[ticket.service] || ticket.service}
         </p>
         {ticket.customerName && (
-          <p className="text-xs text-gray-500 truncate">{ticket.customerName}</p>
+          <p className="text-xs text-gray-500 truncate">
+            {ticket.customerName}
+          </p>
         )}
         <p className="text-xs text-gray-400 mt-0.5">{ticket.printedAt}</p>
         <span

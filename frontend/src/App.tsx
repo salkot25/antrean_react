@@ -53,6 +53,7 @@ export type PrintedTicket = {
   service: string;
   printedAt: string;
   customerName: string;
+  createdAt?: string;
 };
 type LastPrintedTicket = PrintedTicket;
 
@@ -82,18 +83,26 @@ export default function App() {
 
   const savePrintedTicket = (ticket: PrintedTicket) => {
     try {
-      const todayPrefix = new Date().toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
       const raw = localStorage.getItem("pln_printed_tickets");
       const arr: PrintedTicket[] = raw
         ? (JSON.parse(raw) as PrintedTicket[])
         : [];
-      const todayOnly = arr.filter((t) => t.printedAt.startsWith(todayPrefix));
-      todayOnly.push(ticket);
-      localStorage.setItem("pln_printed_tickets", JSON.stringify(todayOnly));
+
+      const withTimestamp: PrintedTicket = {
+        ...ticket,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Dedupe by queue identity to avoid duplicates across retries.
+      const map = new Map<string, PrintedTicket>();
+      [...arr, withTimestamp].forEach((t) => {
+        const key = `${t.number}|${t.service}|${t.printedAt}`;
+        map.set(key, t);
+      });
+
+      // Keep latest history entries only.
+      const merged = Array.from(map.values()).slice(-200);
+      localStorage.setItem("pln_printed_tickets", JSON.stringify(merged));
     } catch {
       // ignore storage errors
     }
