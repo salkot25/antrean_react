@@ -81,6 +81,18 @@ export default function App() {
 
   const getService = (code: string) => SERVICES.find((s) => s.code === code);
 
+  const getDeviceId = () => {
+    const key = "pln_device_id";
+    const existing = localStorage.getItem(key);
+    if (existing) return existing;
+    const generated =
+      (typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `dev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    localStorage.setItem(key, generated);
+    return generated;
+  };
+
   const savePrintedTicket = (ticket: PrintedTicket) => {
     try {
       const raw = localStorage.getItem("pln_printed_tickets");
@@ -370,7 +382,11 @@ export default function App() {
     if (!selectedService) return;
     setLoading(true);
     try {
-      const res = await createQueue(selectedService, customerName || undefined);
+      const res = await createQueue(
+        selectedService,
+        customerName || undefined,
+        getDeviceId(),
+      );
       const now = new Date();
       const timeStr =
         now.toLocaleDateString("id-ID", {

@@ -34,6 +34,18 @@ export default function HistoryPage() {
   const [printing, setPrinting] = useState<string | null>(null);
   const [officeName, setOfficeName] = useState("PLN");
 
+  const getDeviceId = () => {
+    const key = "pln_device_id";
+    const existing = localStorage.getItem(key);
+    if (existing) return existing;
+    const generated =
+      (typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `dev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    localStorage.setItem(key, generated);
+    return generated;
+  };
+
   const formatPrintedAt = (iso: string) => {
     if (!iso) return "";
     const dt = new Date(iso);
@@ -52,7 +64,7 @@ export default function HistoryPage() {
   const refreshStatuses = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await getTodayHistoryQueues();
+      const rows = await getTodayHistoryQueues(undefined, getDeviceId());
       if (!Array.isArray(rows) || rows.length === 0) {
         setTickets([]);
         return;

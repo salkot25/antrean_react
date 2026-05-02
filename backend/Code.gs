@@ -28,6 +28,7 @@ var Q_CREATED_AT = 5; // F (was E)
 var Q_CALLED_AT = 6; // G (was F)
 var Q_COUNTER = 7; // H (was G)
 var Q_DATE = 8; // I (was H)
+var Q_DEVICE = 9; // J source_device
 
 // Column index constants for 'counters' sheet
 var C_ID = 0; // A
@@ -120,7 +121,7 @@ function doGet(e) {
     if (action === "list") {
       return handleListQueue(e.parameter.service);
     } else if (action === "history_today") {
-      return handleHistoryToday(e.parameter.service);
+      return handleHistoryToday(e.parameter.service, e.parameter.deviceId);
     } else if (action === "display") {
       return handleDisplay();
     } else if (action === "get_config") {
@@ -176,7 +177,7 @@ function handleInitSheets() {
   var firstCell = queuesSheet.getRange(1, 1).getValue();
   if (!firstCell || firstCell !== "id") {
     queuesSheet
-      .getRange(1, 1, 1, 9)
+      .getRange(1, 1, 1, 10)
       .setValues([
         [
           "id",
@@ -188,11 +189,12 @@ function handleInitSheets() {
           "called_at",
           "counter",
           "date",
+          "source_device",
         ],
       ]);
     // Format header row
     queuesSheet
-      .getRange(1, 1, 1, 9)
+      .getRange(1, 1, 1, 10)
       .setFontWeight("bold")
       .setBackground("#004482")
       .setFontColor("#ffffff");
@@ -207,6 +209,19 @@ function handleInitSheets() {
     queuesSheet.setColumnWidth(7, 150); // called_at
     queuesSheet.setColumnWidth(8, 200); // counter
     queuesSheet.setColumnWidth(9, 100); // date
+    queuesSheet.setColumnWidth(10, 180); // source_device
+  }
+
+  // Backward compatibility for older sheet schemas (without source_device column)
+  if (queuesSheet.getLastColumn() < 10) {
+    queuesSheet.insertColumnAfter(9);
+    queuesSheet.getRange(1, 10).setValue("source_device");
+    queuesSheet
+      .getRange(1, 10)
+      .setFontWeight("bold")
+      .setBackground("#004482")
+      .setFontColor("#ffffff");
+    queuesSheet.setColumnWidth(10, 180);
   }
 
   // ── counters sheet ──
@@ -709,6 +724,7 @@ function handleCreateQueue(request) {
 
   var service = request.service || "CS";
   var customerName = request.customerName || "";
+  var deviceId = request.deviceId || "";
 
   var sessionStart = getSessionStart();
   var today = new Date();
@@ -739,7 +755,7 @@ function handleCreateQueue(request) {
   var formattedNum = service + "-" + ("000" + newNum).slice(-3);
   var id = Utilities.getUuid();
 
-  // Columns: id | number | service | customer_name | status | created_at | called_at | counter | date
+  // Columns: id | number | service | customer_name | status | created_at | called_at | counter | date | source_device
   sheet.appendRow([
     id,
     formattedNum,
@@ -750,6 +766,7 @@ function handleCreateQueue(request) {
     "",
     "",
     dateStr,
+    deviceId,
   ]);
 
   appLog(
@@ -900,7 +917,7 @@ function handleListQueue(serviceFilter) {
   return jsonOut(result);
 }
 
-function handleHistoryToday(serviceFilter) {
+function handleHistoryToday(serviceFilter, deviceIdFilter) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("queues");
   if (!sheet) return jsonOut([]);
 
@@ -930,6 +947,7 @@ function handleHistoryToday(serviceFilter) {
     var rowService = data[i][Q_SERVICE];
     var rowDate = data[i][Q_DATE];
     var createdAt = data[i][Q_CREATED_AT];
+    var rowDevice = data[i][Q_DEVICE] || "";
 
     var rowDateStr = toYmd(rowDate);
     var createdDateStr = toYmd(createdAt);
@@ -937,6 +955,7 @@ function handleHistoryToday(serviceFilter) {
 
     if (!dateMatch) continue;
     if (serviceFilter && rowService !== serviceFilter) continue;
+    if (deviceIdFilter && String(rowDevice) !== String(deviceIdFilter)) continue;
 
     result.push({
       id: data[i][Q_ID],
@@ -950,6 +969,7 @@ function handleHistoryToday(serviceFilter) {
         : "",
       counter: data[i][Q_COUNTER] || "",
       date: rowDate || todayStr,
+      device_id: rowDevice,
     });
   }
 

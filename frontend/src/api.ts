@@ -1,7 +1,11 @@
 import { GAS_WEB_APP_URL } from "./config";
 
 // ─── createQueue ────────────────────────────────────────────────────────────────
-export const createQueue = async (service: string, customerName?: string) => {
+export const createQueue = async (
+  service: string,
+  customerName?: string,
+  deviceId?: string,
+) => {
   if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
     return {
       number: `${service}-001`,
@@ -22,6 +26,7 @@ export const createQueue = async (service: string, customerName?: string) => {
       action: "create",
       service,
       customerName: customerName || "",
+      deviceId: deviceId || "",
     }),
   });
 
@@ -84,7 +89,10 @@ export const getWaitingQueues = async (service?: string) => {
 };
 
 // ─── getTodayHistoryQueues ─────────────────────────────────────────────────────
-export const getTodayHistoryQueues = async (service?: string) => {
+export const getTodayHistoryQueues = async (
+  service?: string,
+  deviceId?: string,
+) => {
   if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
     return [
       {
@@ -106,9 +114,11 @@ export const getTodayHistoryQueues = async (service?: string) => {
     ];
   }
 
-  const url = service
-    ? `${GAS_WEB_APP_URL}?action=history_today&service=${service}`
-    : `${GAS_WEB_APP_URL}?action=history_today`;
+  const params = new URLSearchParams();
+  params.set("action", "history_today");
+  if (service) params.set("service", service);
+  if (deviceId) params.set("deviceId", deviceId);
+  const url = `${GAS_WEB_APP_URL}?${params.toString()}`;
   const response = await fetch(`${url}&_t=${Date.now()}`, {
     cache: "no-store",
   });
