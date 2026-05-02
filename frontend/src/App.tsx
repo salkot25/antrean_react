@@ -614,7 +614,7 @@ export default function App() {
           Ambil Nomor Antrean
         </h1>
         <button
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate("/history")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
           title="Riwayat cetak tiket"
         >

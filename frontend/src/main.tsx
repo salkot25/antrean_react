@@ -10,6 +10,7 @@ import ServiceConfigPage from "./pages/ServiceConfigPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import LogsPage from "./pages/LogsPage";
 import ProfilePage from "./pages/ProfilePage";
+import HistoryPage from "./pages/HistoryPage";
 import AdminLayout from "./components/AdminLayout";
 import RequireAuth from "./components/RequireAuth";
 import ConnectionLogger from "./components/ConnectionLogger";
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route element={<RequireAuth />}>
             <Route path="/" element={<App />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/history" element={<HistoryPage />} />
             <Route element={<AdminLayout />}>
               <Route
                 path="/admin"
