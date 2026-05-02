@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ChevronLeft, UserCircle2, LogOut, History } from "lucide-react";
+import { ChevronLeft, UserCircle2, LogOut, KeyRound } from "lucide-react";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -32,8 +32,12 @@ export default function ProfilePage() {
             <h2 className="text-xl font-bold text-gray-900">
               {user?.fullName || "Pengguna"}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">@{user?.username || "-"}</p>
-            {user?.email && <p className="text-sm text-gray-500">{user.email}</p>}
+            <p className="text-sm text-gray-500 mt-1">
+              @{user?.username || "-"}
+            </p>
+            {user?.email && (
+              <p className="text-sm text-gray-500">{user.email}</p>
+            )}
           </div>
           <span className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full bg-blue-50 text-blue-700">
             Role: {user?.role || "user"}
@@ -42,11 +46,11 @@ export default function ProfilePage() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-surface-variant p-4 flex flex-col gap-3">
           <button
-            onClick={() => navigate("/history")}
+            onClick={() => navigate("/change-password")}
             className="w-full py-3.5 px-4 rounded-xl bg-[#002e5b]/10 text-[#002e5b] font-semibold hover:bg-[#002e5b]/20 transition-colors flex items-center justify-center gap-2"
           >
-            <History size={18} />
-            Lihat Riwayat Cetak
+            <KeyRound size={18} />
+            Ubah Password
           </button>
 
           <button
