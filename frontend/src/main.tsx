@@ -25,12 +25,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <ConnectionLogger />
         <Routes>
           {/* Public routes — no auth required */}
-          <Route path="/display" element={<DisplayPage />} />
+          <Route path="/" element={<DisplayPage />} />
           <Route path="/login" element={<LoginPage />} />
 
           {/* Protected routes */}
           <Route element={<RequireAuth />}>
-            <Route path="/" element={<App />} />
+            <Route path="/ambil" element={<App />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/change-password" element={<ChangePasswordPage />} />
             <Route path="/history" element={<HistoryPage />} />

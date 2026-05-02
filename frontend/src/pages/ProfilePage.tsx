@@ -15,7 +15,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#f9f9ff] flex flex-col font-['Inter']">
       <header className="bg-[#002e5b] text-white w-full h-16 flex items-center justify-between px-4 shadow-md sticky top-0 z-10">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/ambil")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
           aria-label="Kembali"
         >

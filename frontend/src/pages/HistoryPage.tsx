@@ -32,7 +32,8 @@ export default function HistoryPage() {
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [printing, setPrinting] = useState<string | null>(null);
-  const [browserPrintTicket, setBrowserPrintTicket] = useState<PrintedTicket | null>(null);
+  const [browserPrintTicket, setBrowserPrintTicket] =
+    useState<PrintedTicket | null>(null);
   const [officeName, setOfficeName] = useState("PLN");
 
   const formatPrintedAt = (iso: string) => {
@@ -127,7 +128,7 @@ export default function HistoryPage() {
     <div className="min-h-screen bg-[#f9f9ff] flex flex-col font-['Inter']">
       <header className="bg-[#002e5b] text-white w-full h-16 flex items-center justify-between px-4 shadow-md sticky top-0 z-10">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/ambil")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
           aria-label="Kembali"
         >
@@ -161,7 +162,7 @@ export default function HistoryPage() {
               Belum ada riwayat tiket hari ini
             </p>
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/ambil")}
               className="mt-2 text-[#002e5b] text-sm font-semibold hover:underline"
             >
               Ambil Nomor Antrian
@@ -217,14 +218,20 @@ export default function HistoryPage() {
             <div className="thermal-header">{officeName}</div>
             <div className="thermal-sub">NOMOR ANTREAN</div>
             <div className="thermal-number-box">
-              <span className="thermal-number">{browserPrintTicket.number}</span>
+              <span className="thermal-number">
+                {browserPrintTicket.number}
+              </span>
             </div>
             <div className="thermal-loket">
-              Layanan: {SERVICE_NAMES[browserPrintTicket.service] || browserPrintTicket.service}
+              Layanan:{" "}
+              {SERVICE_NAMES[browserPrintTicket.service] ||
+                browserPrintTicket.service}
             </div>
             <div className="thermal-time">{browserPrintTicket.printedAt}</div>
             {browserPrintTicket.customerName ? (
-              <p className="thermal-detail">Atas nama: {browserPrintTicket.customerName}</p>
+              <p className="thermal-detail">
+                Atas nama: {browserPrintTicket.customerName}
+              </p>
             ) : null}
             <p className="thermal-thanks">Terima kasih</p>
           </>
