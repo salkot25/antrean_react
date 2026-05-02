@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createQueue, getConfig, logEvent } from "./api";
 import {
   browserPrint,
@@ -19,6 +20,7 @@ import {
   CheckCircle2,
   Home,
   Timer,
+  Ticket,
 } from "lucide-react";
 
 const SERVICES = [
@@ -46,14 +48,16 @@ const SERVICES = [
 ];
 
 type AppState = "select" | "modal" | "success";
-type LastPrintedTicket = {
+export type PrintedTicket = {
   number: string;
   service: string;
   printedAt: string;
   customerName: string;
 };
+type LastPrintedTicket = PrintedTicket;
 
 export default function App() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [appState, setAppState] = useState<AppState>("select");
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -69,9 +73,6 @@ export default function App() {
   const [printTimeoutMs, setPrintTimeoutMs] = useState(6000);
   const [printRetryCount, setPrintRetryCount] = useState(1);
   const [officeName, setOfficeName] = useState("PLN ULP Salatiga");
-  const [lastPrinted, setLastPrinted] = useState<LastPrintedTicket | null>(
-    null,
-  );
   const [printerStatus, setPrinterStatus] = useState<{
     connected: boolean;
     address: string;
@@ -79,18 +80,24 @@ export default function App() {
 
   const getService = (code: string) => SERVICES.find((s) => s.code === code);
 
-  useEffect(() => {
+  const savePrintedTicket = (ticket: PrintedTicket) => {
     try {
-      const raw = localStorage.getItem("pln_last_printed_ticket");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as LastPrintedTicket;
-      if (parsed?.number && parsed?.service) {
-        setLastPrinted(parsed);
-      }
+      const todayPrefix = new Date().toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const raw = localStorage.getItem("pln_printed_tickets");
+      const arr: PrintedTicket[] = raw
+        ? (JSON.parse(raw) as PrintedTicket[])
+        : [];
+      const todayOnly = arr.filter((t) => t.printedAt.startsWith(todayPrefix));
+      todayOnly.push(ticket);
+      localStorage.setItem("pln_printed_tickets", JSON.stringify(todayOnly));
     } catch {
-      localStorage.removeItem("pln_last_printed_ticket");
+      // ignore storage errors
     }
-  }, []);
+  };
 
   // Poll printer status every 10 s when running inside Android app
   useEffect(() => {
@@ -376,8 +383,8 @@ export default function App() {
         printedAt: timeStr,
         customerName: customerName || "",
       };
-      setLastPrinted(latest);
       localStorage.setItem("pln_last_printed_ticket", JSON.stringify(latest));
+      savePrintedTicket(latest);
 
       setAppState("success");
 
@@ -391,16 +398,6 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleReprintLatest = () => {
-    if (!lastPrinted) return;
-    setTicket({ number: lastPrinted.number, service: lastPrinted.service });
-    setPrintedAt(lastPrinted.printedAt || "");
-    setCustomerName(lastPrinted.customerName || "");
-    setCountdown(5);
-    setAppState("success");
-    schedulePrint(lastPrinted, "reprint_last");
   };
 
   const handleManualPrint = () => {
@@ -423,7 +420,18 @@ export default function App() {
     const tSvc = getService(ticket.service)!;
     return (
       <div className="min-h-screen bg-[#f9f9ff] flex flex-col items-center font-['Inter']">
-        <main className="w-full max-w-md px-4 flex-1 flex flex-col items-center pt-14 gap-6 no-print">
+        {/* Header */}
+        <header className="bg-[#002e5b] text-white w-full h-16 flex items-center justify-between px-4 shadow-md sticky top-0 z-10 no-print">
+          <img
+            src="/logo.png"
+            alt="PLN Logo"
+            className="h-8 w-8 object-contain"
+          />
+          <h1 className="text-xl font-bold">Tiket Berhasil Dicetak</h1>
+          <div className="w-8" />
+        </header>
+
+        <main className="w-full max-w-md px-4 flex-1 flex flex-col items-center pt-10 gap-6 no-print">
           {/* Check icon */}
           <div className="bg-[#8ad1ff]/40 rounded-full p-6 flex items-center justify-center">
             <CheckCircle2
@@ -593,16 +601,41 @@ export default function App() {
   // ─── MAIN SELECT + MODAL VIEW ────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col items-center font-['Inter']">
-      <main className="w-full max-w-md px-4 sm:px-5 flex-1 flex flex-col pt-10 sm:pt-12 gap-5 pb-28 sm:pb-8">
+      {/* Header */}
+      <header className="bg-primary text-white w-full h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <img
+            src="/logo.png"
+            alt="PLN Logo"
+            className="h-8 w-8 object-contain"
+          />
+          <h1 className="text-base sm:text-lg font-semibold tracking-tight">
+            Ambil Nomor Antrean
+          </h1>
+        </div>
+        <button
+          onClick={() => navigate("/profile")}
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          title="Lihat tiket saya"
+        >
+          <Ticket size={20} />
+        </button>
+      </header>
+
+      <main className="w-full max-w-md px-4 sm:px-5 flex-1 flex flex-col pt-6 sm:pt-8 gap-5 pb-28 sm:pb-8">
         {/* Logo & Headline */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="bg-white rounded-3xl shadow-sm border border-surface-variant w-32 h-32 sm:w-36 sm:h-36 flex flex-col items-center justify-center p-3">
+          <button
+            onClick={() => navigate("/profile")}
+            className="bg-white rounded-3xl shadow-sm border border-surface-variant w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center p-2 hover:shadow-md hover:border-primary/30 active:scale-95 transition-all cursor-pointer"
+            title="Lihat tiket saya"
+          >
             <img
               src="/logo.png"
               alt="PLN Logo"
               className="w-full h-full object-contain"
             />
-          </div>
+          </button>
           <div>
             <h2 className="text-2xl sm:text-[28px] font-bold text-primary mb-1 tracking-tight">
               Sistem Antrean Digital
@@ -611,15 +644,6 @@ export default function App() {
               Pilih layanan, ambil tiket, lalu tunggu dipanggil.
             </p>
           </div>
-          {/* Cetak Ulang — pindah dari appbar ke bawah headline */}
-          {lastPrinted && (
-            <button
-              onClick={handleReprintLatest}
-              className="flex items-center gap-1.5 text-xs text-primary border border-primary/30 bg-primary/5 px-3 py-1.5 rounded-full hover:bg-primary/10 active:scale-95 transition-all"
-            >
-              <Printer size={13} /> Cetak Ulang Tiket Terakhir ({lastPrinted.number})
-            </button>
-          )}
         </div>
 
         {/* Service Selection Card */}
