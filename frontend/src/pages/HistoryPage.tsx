@@ -32,19 +32,8 @@ export default function HistoryPage() {
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [printing, setPrinting] = useState<string | null>(null);
+  const [browserPrintTicket, setBrowserPrintTicket] = useState<PrintedTicket | null>(null);
   const [officeName, setOfficeName] = useState("PLN");
-
-  const getDeviceId = () => {
-    const key = "pln_device_id";
-    const existing = localStorage.getItem(key);
-    if (existing) return existing;
-    const generated =
-      (typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `dev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
-    localStorage.setItem(key, generated);
-    return generated;
-  };
 
   const formatPrintedAt = (iso: string) => {
     if (!iso) return "";
@@ -64,7 +53,7 @@ export default function HistoryPage() {
   const refreshStatuses = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await getTodayHistoryQueues(undefined, getDeviceId());
+      const rows = await getTodayHistoryQueues();
       if (!Array.isArray(rows) || rows.length === 0) {
         setTickets([]);
         return;
@@ -119,7 +108,12 @@ export default function HistoryPage() {
           );
         }
       } else {
-        browserPrint();
+        // Browser mode: print only selected ticket using dedicated print area.
+        setBrowserPrintTicket(ticket);
+        setTimeout(() => {
+          browserPrint();
+          setTimeout(() => setBrowserPrintTicket(null), 300);
+        }, 80);
       }
     } finally {
       setPrinting(null);
@@ -215,6 +209,96 @@ export default function HistoryPage() {
           </>
         )}
       </main>
+
+      {/* Browser print layout: only visible in print media */}
+      <div id="history-thermal-print" className="print-only">
+        {browserPrintTicket ? (
+          <>
+            <div className="thermal-header">{officeName}</div>
+            <div className="thermal-sub">NOMOR ANTREAN</div>
+            <div className="thermal-number-box">
+              <span className="thermal-number">{browserPrintTicket.number}</span>
+            </div>
+            <div className="thermal-loket">
+              Layanan: {SERVICE_NAMES[browserPrintTicket.service] || browserPrintTicket.service}
+            </div>
+            <div className="thermal-time">{browserPrintTicket.printedAt}</div>
+            {browserPrintTicket.customerName ? (
+              <p className="thermal-detail">Atas nama: {browserPrintTicket.customerName}</p>
+            ) : null}
+            <p className="thermal-thanks">Terima kasih</p>
+          </>
+        ) : null}
+      </div>
+
+      <style>{`
+        .print-only { display: none; }
+
+        @media print {
+          @page {
+            size: 58mm auto;
+            margin: 0;
+          }
+
+          body * { visibility: hidden !important; }
+          #history-thermal-print, #history-thermal-print * { visibility: visible !important; }
+
+          #history-thermal-print {
+            display: block !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 58mm;
+            padding: 4mm 3mm;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #000;
+            background: #fff;
+          }
+        }
+
+        .thermal-header {
+          text-align: center;
+          font-weight: 900;
+          font-size: 13px;
+          margin-bottom: 2px;
+        }
+
+        .thermal-sub {
+          text-align: center;
+          font-size: 12px;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+
+        .thermal-number-box {
+          border: 2px solid #000;
+          border-radius: 4px;
+          text-align: center;
+          padding: 4px 0;
+          margin: 4px 0 6px 0;
+        }
+
+        .thermal-number {
+          font-size: 36px;
+          font-weight: 900;
+          line-height: 1.1;
+        }
+
+        .thermal-loket,
+        .thermal-time,
+        .thermal-detail,
+        .thermal-thanks {
+          text-align: center;
+          font-size: 10px;
+          margin: 3px 0;
+        }
+
+        .thermal-thanks {
+          margin-top: 6px;
+          font-style: italic;
+        }
+      `}</style>
     </div>
   );
 }
