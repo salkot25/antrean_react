@@ -20,7 +20,7 @@ import {
   CheckCircle2,
   Home,
   Timer,
-  Ticket,
+  History,
 } from "lucide-react";
 
 const SERVICES = [
@@ -603,39 +603,35 @@ export default function App() {
     <div className="min-h-screen bg-background flex flex-col items-center font-['Inter']">
       {/* Header */}
       <header className="bg-primary text-white w-full h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <img
-            src="/logo.png"
-            alt="PLN Logo"
-            className="h-8 w-8 object-contain"
-          />
-          <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-            Ambil Nomor Antrean
-          </h1>
-        </div>
         <button
           onClick={() => navigate("/profile")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
-          title="Lihat tiket saya"
+          title="Profil saya"
         >
-          <Ticket size={20} />
+          <User size={22} />
+        </button>
+        <h1 className="text-base sm:text-lg font-semibold tracking-tight">
+          Ambil Nomor Antrean
+        </h1>
+        <button
+          onClick={() => navigate("/profile")}
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          title="Riwayat cetak tiket"
+        >
+          <History size={22} />
         </button>
       </header>
 
       <main className="w-full max-w-md px-4 sm:px-5 flex-1 flex flex-col pt-6 sm:pt-8 gap-5 pb-28 sm:pb-8">
         {/* Logo & Headline */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <button
-            onClick={() => navigate("/profile")}
-            className="bg-white rounded-3xl shadow-sm border border-surface-variant w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center p-2 hover:shadow-md hover:border-primary/30 active:scale-95 transition-all cursor-pointer"
-            title="Lihat tiket saya"
-          >
+          <div className="bg-white rounded-3xl shadow-sm border border-surface-variant w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center p-2">
             <img
               src="/logo.png"
               alt="PLN Logo"
               className="w-full h-full object-contain"
             />
-          </button>
+          </div>
           <div>
             <h2 className="text-2xl sm:text-[28px] font-bold text-primary mb-1 tracking-tight">
               Sistem Antrean Digital
