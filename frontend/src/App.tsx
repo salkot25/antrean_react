@@ -106,11 +106,17 @@ export default function App() {
       checkStatus();
       if (!result.success) {
         if (result.reason === "bluetooth_disabled") {
-          alert("Bluetooth tidak aktif. Harap aktifkan Bluetooth dan coba lagi.");
+          alert(
+            "Bluetooth tidak aktif. Harap aktifkan Bluetooth dan coba lagi.",
+          );
         } else if (result.reason === "permission_denied") {
-          alert("Izin Bluetooth ditolak. Izinkan akses Bluetooth di pengaturan aplikasi.");
+          alert(
+            "Izin Bluetooth ditolak. Izinkan akses Bluetooth di pengaturan aplikasi.",
+          );
         } else if (result.reason === "no_device_paired") {
-          alert("Printer belum dipilih. Silakan pilih printer Bluetooth terlebih dahulu.");
+          alert(
+            "Printer belum dipilih. Silakan pilih printer Bluetooth terlebih dahulu.",
+          );
         }
       }
     };
@@ -417,18 +423,7 @@ export default function App() {
     const tSvc = getService(ticket.service)!;
     return (
       <div className="min-h-screen bg-[#f9f9ff] flex flex-col items-center font-['Inter']">
-        {/* Header */}
-        <header className="bg-[#002e5b] text-white w-full h-16 flex items-center justify-between px-4 shadow-md sticky top-0 z-10 no-print">
-          <img
-            src="/logo.png"
-            alt="PLN Logo"
-            className="h-8 w-8 object-contain"
-          />
-          <h1 className="text-xl font-bold">Tiket Berhasil Dicetak</h1>
-          <div className="w-8" />
-        </header>
-
-        <main className="w-full max-w-md px-4 flex-1 flex flex-col items-center pt-10 gap-6 no-print">
+        <main className="w-full max-w-md px-4 flex-1 flex flex-col items-center pt-14 gap-6 no-print">
           {/* Check icon */}
           <div className="bg-[#8ad1ff]/40 rounded-full p-6 flex items-center justify-center">
             <CheckCircle2
@@ -598,36 +593,10 @@ export default function App() {
   // ─── MAIN SELECT + MODAL VIEW ────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col items-center font-['Inter']">
-      {/* Header */}
-      <header className="bg-primary text-white w-full h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <img
-            src="/logo.png"
-            alt="PLN Logo"
-            className="h-8 w-8 object-contain"
-          />
-          <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-            Ambil Nomor Antrean
-          </h1>
-        </div>
-        <button
-          onClick={handleReprintLatest}
-          disabled={!lastPrinted}
-          className="p-2 rounded-full hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title={
-            lastPrinted
-              ? "Cetak ulang tiket terakhir"
-              : "Belum ada tiket untuk dicetak ulang"
-          }
-        >
-          <Printer size={18} />
-        </button>
-      </header>
-
-      <main className="w-full max-w-md px-4 sm:px-5 flex-1 flex flex-col pt-6 sm:pt-8 gap-5 pb-28 sm:pb-8">
+      <main className="w-full max-w-md px-4 sm:px-5 flex-1 flex flex-col pt-10 sm:pt-12 gap-5 pb-28 sm:pb-8">
         {/* Logo & Headline */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="bg-white rounded-3xl shadow-sm border border-surface-variant w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center p-2">
+          <div className="bg-white rounded-3xl shadow-sm border border-surface-variant w-32 h-32 sm:w-36 sm:h-36 flex flex-col items-center justify-center p-3">
             <img
               src="/logo.png"
               alt="PLN Logo"
@@ -642,6 +611,15 @@ export default function App() {
               Pilih layanan, ambil tiket, lalu tunggu dipanggil.
             </p>
           </div>
+          {/* Cetak Ulang — pindah dari appbar ke bawah headline */}
+          {lastPrinted && (
+            <button
+              onClick={handleReprintLatest}
+              className="flex items-center gap-1.5 text-xs text-primary border border-primary/30 bg-primary/5 px-3 py-1.5 rounded-full hover:bg-primary/10 active:scale-95 transition-all"
+            >
+              <Printer size={13} /> Cetak Ulang Tiket Terakhir ({lastPrinted.number})
+            </button>
+          )}
         </div>
 
         {/* Service Selection Card */}
