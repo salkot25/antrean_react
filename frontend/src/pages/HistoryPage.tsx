@@ -191,7 +191,10 @@ export default function HistoryPage() {
         >
           <ChevronLeft size={24} />
         </button>
-        <h1 className="text-lg font-bold">Riwayat Cetak</h1>
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="Logo" className="h-7 w-7 object-contain" />
+          <h1 className="text-lg font-bold">Riwayat Cetak</h1>
+        </div>
         <button
           onClick={() => void refreshStatuses()}
           disabled={loading}

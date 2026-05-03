@@ -27,11 +27,14 @@ export default function ProfilePage() {
         >
           <ChevronLeft size={24} />
         </button>
-        <div className="text-center leading-tight">
-          <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-            Profil
-          </h1>
-          <p className="text-[11px] sm:text-xs text-white/70">Akun Operator</p>
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
+          <div className="text-center leading-tight">
+            <h1 className="text-base sm:text-lg font-semibold tracking-tight">
+              Profil
+            </h1>
+            <p className="text-[11px] sm:text-xs text-white/70">Akun Operator</p>
+          </div>
         </div>
         <div className="w-10" />
       </header>

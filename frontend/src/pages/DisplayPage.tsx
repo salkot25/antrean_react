@@ -299,7 +299,7 @@ export default function DisplayPage() {
     <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] h-screen w-screen overflow-hidden flex flex-col font-['Inter']">
       <header className="bg-primary leading-tight tracking-tight border-b border-blue-900/20 shadow-sm flex justify-between items-center h-16 lg:h-20 px-4 lg:px-8 w-full shrink-0 z-50 text-white">
         <div className="flex items-center gap-3 lg:gap-4 min-w-0">
-          <Zap className="text-[#FFC72C] shrink-0" size={30} fill="#FFC72C" />
+          <img src="/logo.png" alt="Logo" className="h-10 w-10 lg:h-12 lg:w-12 shrink-0 object-contain" />
           <div className="min-w-0">
             <h1 className="text-base lg:text-2xl font-black uppercase tracking-wide lg:tracking-widest truncate">
               {officeName}
