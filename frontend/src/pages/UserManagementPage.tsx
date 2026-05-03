@@ -234,7 +234,7 @@ function UserModal({
             ) : (
               <Check size={15} />
             )}
-            {isEdit ? "Simpan Perubahan" : "Tambah User"}
+            {isEdit ? "Simpan Perubahan" : "Tambah Pengguna"}
           </button>
         </div>
       </div>
@@ -606,11 +606,11 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* Header (Queue Control Style) */}
+      {/* Header */}
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
-            User Management
+            Manajemen Pengguna
           </h1>
           <p className="text-sm sm:text-base text-slate-500 mt-1">
             Kelola akses sistem, peran, dan status untuk seluruh personel.
@@ -622,7 +622,7 @@ export default function UserManagementPage() {
             className="bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-primary-container transition-colors shadow-sm"
           >
             <UserPlus size={16} />
-            Tambah User Baru
+            Tambah Pengguna Baru
           </button>
         )}
       </header>

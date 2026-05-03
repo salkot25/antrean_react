@@ -9,7 +9,7 @@ export default function DisplayPage() {
   // callingState: maps counter loket name -> queue number currently being announced
   const [callingState, setCallingState] = useState<Record<string, string>>({});
   const [runningText, setRunningText] = useState(
-    "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan. Pelayanan kami mengutamakan kepuasan Anda.",
+    "Selamat datang di PLN ULP Salatiga. Ambil nomor antrean, lalu tunggu panggilan di ruang tunggu. Pelayanan kami mengutamakan kepuasan Anda.",
   );
   const [officeName, setOfficeName] = useState("PLN Pelayanan Pelanggan");
   const prevDataRef = useRef<Record<string, any>>({});
@@ -305,7 +305,7 @@ export default function DisplayPage() {
               {officeName}
             </h1>
             <p className="text-[11px] lg:text-xs text-white/75 font-medium">
-              Display Antrean Real-Time
+              Tampilan Antrean Real-Time
             </p>
           </div>
         </div>
@@ -374,7 +374,7 @@ export default function DisplayPage() {
                       </span>
                     </div>
 
-                    {/* right: selanjutnya / menunggu */}
+                    {/* right: nomor berikutnya / menunggu */}
                     {/* right: next number (top) + waiting count (bottom) */}
                     <div className="flex-1 flex flex-col divide-y divide-slate-100 px-2 lg:px-3">
                       {/* next number */}
@@ -385,7 +385,7 @@ export default function DisplayPage() {
                           {c.nextNumber || "—"}
                         </span>
                         <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-widest text-slate-400">
-                          Selanjutnya
+                          Nomor Berikutnya
                         </span>
                       </div>
                       {/* waiting count */}
@@ -428,9 +428,9 @@ export default function DisplayPage() {
             <button
               onClick={scheduleAutoVideoAudioActivation}
               className="absolute bottom-3 right-3 z-20 bg-black/55 hover:bg-black/75 text-white text-[11px] lg:text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition-all"
-              title="Klik untuk mengaktifkan suara video"
+              title="Aktifkan suara video agar audio diputar"
             >
-              Aktifkan Suara Video
+              Aktifkan Audio Video
             </button>
 
             <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />

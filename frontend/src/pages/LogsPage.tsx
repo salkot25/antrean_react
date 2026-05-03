@@ -64,6 +64,12 @@ function queueProgressLabel(eventName: string): string {
   return "Lainnya";
 }
 
+function actorLabel(actor: string): string {
+  const value = (actor || "").toLowerCase();
+  if (value === "kiosk") return "Antrean App";
+  return actor;
+}
+
 export default function LogsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
@@ -137,7 +143,7 @@ export default function LogsPage() {
       }
       setLastUpdated(new Date());
     } catch {
-      setError("Gagal memuat logs dari server.");
+      setError("Gagal memuat log dari server.");
     } finally {
       setLoading(false);
     }
@@ -155,7 +161,7 @@ export default function LogsPage() {
       await fetchLogs();
       setShowClearConfirm(false);
     } catch {
-      setError("Gagal menghapus logs.");
+      setError("Gagal menghapus log.");
     } finally {
       setClearing(false);
     }
@@ -347,10 +353,10 @@ export default function LogsPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">
-                    Hapus Semua Logs?
+                    Hapus Semua Log?
                   </h3>
                   <p className="text-sm text-slate-600 mt-1">
-                    Seluruh data logs akan dihapus dan tindakan ini tidak dapat
+                    Seluruh data log akan dihapus dan tindakan ini tidak dapat
                     dibatalkan.
                   </p>
                 </div>
@@ -480,7 +486,7 @@ export default function LogsPage() {
 
         <div>
           <label className="block text-xs font-semibold text-on-surface-variant mb-1">
-            Module
+            Modul
           </label>
           <select
             value={moduleName}
@@ -498,7 +504,7 @@ export default function LogsPage() {
 
         <div>
           <label className="block text-xs font-semibold text-on-surface-variant mb-1">
-            Connection
+            Koneksi
           </label>
           <select
             value={status}
@@ -515,7 +521,7 @@ export default function LogsPage() {
 
         <div>
           <label className="block text-xs font-semibold text-on-surface-variant mb-1">
-            Search
+            Cari
           </label>
           <div className="relative">
             <Search
@@ -525,7 +531,7 @@ export default function LogsPage() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="event, message, actor..."
+              placeholder="event, pesan, pelaku..."
               className="w-full bg-surface-container-low border border-surface-variant rounded-lg pl-9 pr-3 py-2 text-sm"
             />
           </div>
@@ -651,7 +657,7 @@ export default function LogsPage() {
           >
             {mobileRenderedRows.length === 0 && !loading ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-10 text-sm text-slate-500 text-center">
-                Belum ada data logs.
+                Belum ada data log.
               </div>
             ) : (
               mobileRenderedRows.map((row, idx) => {
@@ -735,7 +741,7 @@ export default function LogsPage() {
                     <div className="mt-2.5 flex items-center gap-2 flex-wrap text-[11px] text-slate-400">
                       {row.actor && (
                         <span className="font-medium text-slate-500">
-                          {row.actor}
+                          {actorLabel(row.actor)}
                         </span>
                       )}
                       {row.actor && row.timestamp && <span>·</span>}
@@ -793,10 +799,10 @@ export default function LogsPage() {
                   Level
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
-                  Module
+                  Modul
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
-                  Event
+                  Peristiwa
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
                   Progres
@@ -805,16 +811,16 @@ export default function LogsPage() {
                   Nomor
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
-                  Message
+                  Pesan
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
-                  Connection
+                  Koneksi
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
-                  Actor
+                  Pelaku
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold text-outline uppercase tracking-wider">
-                  Path
+                  Jalur
                 </th>
               </tr>
             </thead>
@@ -825,7 +831,7 @@ export default function LogsPage() {
                     colSpan={10}
                     className="px-4 py-10 text-center text-sm text-on-surface-variant"
                   >
-                    {loading ? "Memuat logs..." : "Belum ada data logs."}
+                    {loading ? "Memuat log..." : "Belum ada data log."}
                   </td>
                 </tr>
               ) : (
@@ -882,7 +888,7 @@ export default function LogsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-on-surface-variant">
-                          {row.actor}
+                          {actorLabel(row.actor)}
                         </td>
                         <td className="px-4 py-3 text-xs text-outline">
                           {row.path || "-"}

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { createQueue, getConfig, logEvent } from "./api";
+import { createQueue, getConfig, getDisplayData, logEvent } from "./api";
 import {
   browserPrint,
   requestBridgePrint,
@@ -62,7 +62,7 @@ const SERVICE_THEME = {
     selectedBg: "bg-emerald-50",
     selectedTitle: "text-emerald-800",
     chip: "bg-emerald-100 text-emerald-700",
-    helper: "Layanan Aplikasi PLN Mobile",
+    helper: "Layanan aplikasi PLN Mobile",
   },
   CS: {
     iconBg: "bg-cyan-100",
@@ -95,6 +95,7 @@ export type PrintedTicket = {
 type LastPrintedTicket = PrintedTicket;
 
 export default function App() {
+  const MODAL_OUT_MS = 260;
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -113,11 +114,16 @@ export default function App() {
   const [printTimeoutMs, setPrintTimeoutMs] = useState(6000);
   const [printRetryCount, setPrintRetryCount] = useState(1);
   const [officeName, setOfficeName] = useState("PLN ULP Salatiga");
+  const [displayData, setDisplayData] = useState<Record<string, any>>({});
   const [printerStatus, setPrinterStatus] = useState<{
     connected: boolean;
     address: string;
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [servicePulseCode, setServicePulseCode] = useState<string | null>(null);
+  const [isCtaPopping, setIsCtaPopping] = useState(false);
+  const [isModalClosing, setIsModalClosing] = useState(false);
+  const modalTransitionTimerRef = useRef<number | null>(null);
 
   const getService = (code: string) => SERVICES.find((s) => s.code === code);
 
@@ -241,6 +247,42 @@ export default function App() {
     loadPrintSetting();
   }, []);
 
+  useEffect(() => {
+    if (!selectedService) return;
+    setIsCtaPopping(true);
+    const timer = window.setTimeout(() => setIsCtaPopping(false), 380);
+    return () => window.clearTimeout(timer);
+  }, [selectedService]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchDisplay = async () => {
+      try {
+        const data = await getDisplayData();
+        if (active && data && typeof data === "object") {
+          setDisplayData(data as Record<string, any>);
+        }
+      } catch {
+        // keep previous display snapshot when fetch fails
+      }
+    };
+
+    fetchDisplay();
+    const interval = window.setInterval(fetchDisplay, 3000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (modalTransitionTimerRef.current !== null) {
+        window.clearTimeout(modalTransitionTimerRef.current);
+      }
+    };
+  }, []);
+
   const logPrintEvent = (payload: {
     level?: "INFO" | "WARN" | "ERROR";
     event: string;
@@ -284,7 +326,7 @@ export default function App() {
 
     logPrintEvent({
       event: "print_requested",
-      message: "Print tiket diminta dari kiosk",
+      message: "Cetak tiket diminta dari Antrean App",
       details: {
         trigger,
         printMode,
@@ -424,11 +466,28 @@ export default function App() {
 
   const handleSelectService = (code: string) => {
     setSelectedService(code);
+    setServicePulseCode(code);
+    window.setTimeout(() => {
+      setServicePulseCode((prev) => (prev === code ? null : prev));
+    }, 420);
   };
 
   const handleOpenModal = () => {
     if (!selectedService) return;
+    setIsModalClosing(false);
     setAppState("modal");
+  };
+
+  const closeModalWithOutro = (nextState: AppState) => {
+    if (modalTransitionTimerRef.current !== null) {
+      window.clearTimeout(modalTransitionTimerRef.current);
+    }
+    setIsModalClosing(true);
+    modalTransitionTimerRef.current = window.setTimeout(() => {
+      setIsModalClosing(false);
+      setAppState(nextState);
+      modalTransitionTimerRef.current = null;
+    }, MODAL_OUT_MS);
   };
 
   const handleConfirm = async () => {
@@ -460,7 +519,7 @@ export default function App() {
       localStorage.setItem("pln_last_printed_ticket", JSON.stringify(latest));
       savePrintedTicket(latest);
 
-      setAppState("success");
+      closeModalWithOutro("success");
 
       // Auto print follows Service Config (autoPrint)
       if (autoPrint) {
@@ -468,7 +527,7 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal mengambil antrian. Silakan coba lagi.");
+      alert("Gagal mengambil antrean. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -488,6 +547,15 @@ export default function App() {
   };
 
   const svc = selectedService ? getService(selectedService) : null;
+  const selectedLastNumber = svc
+    ? (displayData[svc.loket]?.number as string) || "--"
+    : "--";
+  const selectedNextNumber = svc
+    ? (displayData[svc.loket]?.nextNumber as string) || "--"
+    : "--";
+  const selectedWaitingCount = svc
+    ? Number(displayData[svc.loket]?.waitingCount ?? 0)
+    : 0;
 
   // ─── SUCCESS PAGE ────────────────────────────────────────────────────────────
   if (appState === "success" && ticket) {
@@ -510,15 +578,14 @@ export default function App() {
             </span>
           </div>
           <span className="text-xs sm:text-sm font-semibold bg-white/15 rounded-full px-3 py-1">
-            Proses Selesai
+            Cetak Berhasil
           </span>
         </header>
 
-        <main className="w-full max-w-md px-4 flex-1 flex flex-col items-center pt-8 gap-5 no-print">
-          {/* Check icon */}
-          <div className="bg-white border border-cyan-100 rounded-full p-5 shadow-sm flex items-center justify-center">
+        <main className="w-full max-w-md px-4 flex-1 flex flex-col items-center pt-7 gap-4 no-print">
+          <div className="bg-white border border-cyan-100 rounded-full p-4 shadow-sm flex items-center justify-center animate-[successPulse_2s_ease-in-out_infinite]">
             <CheckCircle2
-              size={72}
+              size={64}
               className="text-[#00658d]"
               fill="#8ad1ff"
               strokeWidth={1.5}
@@ -526,50 +593,86 @@ export default function App() {
           </div>
 
           <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-1 tracking-tight">
               Tiket Berhasil Dicetak
             </h2>
-            <p className="text-slate-500 max-w-xs mx-auto">
-              Tiket siap digunakan. Mohon menunggu hingga nomor dipanggil.
+            <p className="text-slate-500 max-w-xs mx-auto text-sm">
+              Serahkan tiket kepada pelanggan, lalu arahkan ke ruang tunggu
+              hingga nomor dipanggil.
             </p>
           </div>
 
-          {/* Queue number card */}
-          <div className="w-full max-w-sm bg-white shadow-lg rounded-3xl py-8 px-6 border border-slate-200 flex flex-col items-center">
+          <div className="w-full max-w-sm bg-white shadow-lg rounded-3xl py-6 px-5 border border-slate-200 flex flex-col items-center relative overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-sky-50/70 to-transparent animate-[shimmerSlide_1.6s_ease-out]" />
             <span
-              className={`text-xs font-semibold rounded-full px-3 py-1 mb-3 ${successTheme.chip}`}
+              className={`relative text-xs font-semibold rounded-full px-3 py-1 mb-2 ${successTheme.chip}`}
             >
               {tSvc.name}
             </span>
-            <p className="text-xs font-semibold text-slate-500 tracking-widest uppercase mb-3">
+            <p className="relative text-xs font-semibold text-slate-500 tracking-widest uppercase mb-2">
               Nomor Antrean
             </p>
-            <h1 className="text-7xl font-black text-primary tracking-tight leading-none">
+            <h1 className="relative text-7xl font-black text-primary tracking-tight leading-none tabular-nums whitespace-nowrap">
               {ticket.number}
             </h1>
-            <p className="text-xs text-slate-400 mt-4">
+            <p className="relative text-xs text-slate-500 mt-3">
               Waktu cetak: {printedAt}
             </p>
+
+            <div className="relative mt-4 w-full grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+                <p className="text-[11px] text-slate-500">Nomor Terakhir</p>
+                <p className="text-lg font-extrabold text-[#005BAC] tabular-nums">
+                  {selectedLastNumber}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+                <p className="text-[11px] text-slate-500">Nomor Berikutnya</p>
+                <p className="text-lg font-extrabold text-emerald-700 tabular-nums">
+                  {selectedNextNumber}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-3.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">Mode Cetak</span>
+              <span
+                className={`font-semibold ${autoPrint ? "text-emerald-700" : "text-amber-700"}`}
+              >
+                {autoPrint ? "Cetak Otomatis Aktif" : "Cetak Manual"}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="text-slate-500">Perkiraan Menunggu</span>
+              <span className="font-semibold text-slate-700">
+                {selectedWaitingCount} antrean
+              </span>
+            </div>
           </div>
 
           <div className="w-full max-w-sm flex flex-col gap-3">
             <button
               onClick={handleReset}
-              className="w-full bg-primary text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-primary-container active:scale-95 transition-all"
+              className="w-full bg-primary text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-primary-container hover:-translate-y-0.5 active:scale-95 transition-all"
             >
-              <Home size={20} /> Layani Pelanggan Berikutnya
+              <Home size={20} /> Lanjut ke Pelanggan Berikutnya
             </button>
             <button
               onClick={handleManualPrint}
-              className="w-full text-primary bg-white border border-slate-300 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-95 transition-all"
+              className="w-full text-primary bg-white border border-slate-300 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 hover:-translate-y-0.5 active:scale-95 transition-all"
             >
               <Printer size={20} /> Cetak Ulang Tiket
             </button>
           </div>
 
-          <p className="text-slate-500 text-sm flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5">
-            <Timer size={16} /> Halaman ini akan kembali otomatis dalam{" "}
-            {countdown} detik
+          <p className="text-slate-600 text-sm flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5">
+            <Timer size={16} /> Kembali otomatis dalam{" "}
+            <span className="font-bold text-primary tabular-nums">
+              {countdown}
+            </span>{" "}
+            detik
           </p>
         </main>
 
@@ -587,8 +690,8 @@ export default function App() {
             <br />
             Anda dipanggil
           </p>
-          <p className="thermal-detail">Menuju: {tSvc.name}</p>
-          <p className="thermal-detail">Pantau layar display</p>
+          <p className="thermal-detail">Layanan: {tSvc.name}</p>
+          <p className="thermal-detail">Pantau layar antrean</p>
           {customerName && (
             <p className="thermal-detail">Atas nama: {customerName}</p>
           )}
@@ -802,13 +905,13 @@ export default function App() {
             Ambil Nomor Antrean
           </h1>
           <p className="text-[11px] sm:text-xs text-white/70">
-            Mode Operasional Lobby
+            Mode Operasional Lobi
           </p>
         </div>
         <button
           onClick={() => navigate("/history")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
-          title="Riwayat cetak tiket"
+          title="Riwayat Cetak Tiket"
         >
           <History size={22} />
         </button>
@@ -833,7 +936,7 @@ export default function App() {
                     Sistem Antrean Digital
                   </h2>
                   <p className="text-on-surface-variant text-sm">
-                    Pilih layanan sesuai kebutuhan pelanggan, lalu cetak nomor
+                    Pilih layanan sesuai kebutuhan pelanggan, lalu ambil nomor
                     antrean.
                   </p>
                 </div>
@@ -843,7 +946,7 @@ export default function App() {
             <div className="w-full bg-white rounded-3xl shadow-sm border border-slate-200 p-4 sm:p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-on-surface text-base">
-                  Pilih Loket Layanan
+                  Pilih Layanan
                 </h3>
                 <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
                   3 Loket
@@ -853,6 +956,7 @@ export default function App() {
                 {SERVICES.map((service) => {
                   const Icon = service.icon;
                   const isSelected = selectedService === service.code;
+                  const isPulsing = servicePulseCode === service.code;
                   const theme =
                     SERVICE_THEME[service.code as keyof typeof SERVICE_THEME] ||
                     SERVICE_THEME.CS;
@@ -861,12 +965,18 @@ export default function App() {
                     <button
                       key={service.code}
                       onClick={() => handleSelectService(service.code)}
-                      className={`w-full min-h-[84px] border rounded-2xl p-3.5 flex items-center text-left transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                      className={`relative overflow-hidden w-full min-h-[84px] border rounded-2xl p-3.5 flex items-center text-left transform-gpu transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/40 ${
                         isSelected
-                          ? `${theme.selectedBorder} ${theme.selectedBg} shadow-sm`
+                          ? `${theme.selectedBorder} ${theme.selectedBg} shadow-md ring-1 ring-primary/20`
                           : "border-slate-200 bg-white hover:border-slate-300"
-                      }`}
+                      } ${isPulsing ? "animate-[servicePulse_420ms_cubic-bezier(0.22,1,0.36,1)]" : ""}`}
+                      style={{
+                        animationDelay: `${service.code === "PLN" ? 0 : service.code === "CS" ? 40 : 80}ms`,
+                      }}
                     >
+                      {isSelected && (
+                        <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/35 to-white/0 animate-[shimmerSlide_1.1s_ease-out]" />
+                      )}
                       <div
                         className={`p-2.5 rounded-xl mr-4 flex-shrink-0 transition-colors ${
                           isSelected ? theme.iconBg : "bg-slate-100"
@@ -921,6 +1031,32 @@ export default function App() {
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-3">
+                    <p className="text-xs text-slate-500 mb-1">
+                      Nomor Terakhir
+                    </p>
+                    <p className="text-[30px] leading-none font-extrabold text-[#005BAC] tracking-tight tabular-nums whitespace-nowrap">
+                      {selectedLastNumber}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-3">
+                    <p className="text-xs text-slate-500 mb-1">
+                      Nomor Berikutnya
+                    </p>
+                    <p className="text-[30px] leading-none font-extrabold text-emerald-700 tracking-tight tabular-nums whitespace-nowrap">
+                      {selectedNextNumber}
+                    </p>
+                  </div>
+                </div>
+                {!svc && (
+                  <p className="text-[11px] text-slate-500 mt-2 text-center">
+                    Pilih layanan untuk melihat nomor antrean terbaru.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1004,12 +1140,15 @@ export default function App() {
                     <p
                       className={`text-sm font-medium ${autoPrint ? "text-emerald-700" : "text-slate-600"}`}
                     >
-                      {autoPrint ? "Print Aktif" : "Print Nonaktif"}
+                      {autoPrint
+                        ? "Cetak Otomatis Aktif"
+                        : "Cetak Otomatis Nonaktif"}
                     </p>
                     <p
                       className={`text-xs font-medium ${autoPrint ? "text-amber-600" : "text-slate-500"}`}
                     >
-                      Mode: {autoPrint ? "Auto Print" : "Manual (Cetak Ulang)"}
+                      Mode:{" "}
+                      {autoPrint ? "Cetak Otomatis" : "Manual (Cetak Ulang)"}
                     </p>
                   </div>
                 </div>
@@ -1020,11 +1159,11 @@ export default function App() {
               <button
                 onClick={handleOpenModal}
                 disabled={!selectedService}
-                className={`w-full min-h-[56px] font-semibold py-4 px-4 rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all focus:outline-none ${
+                className={`w-full min-h-[56px] font-semibold py-4 px-4 rounded-2xl shadow-md flex items-center justify-center gap-2 transform-gpu transition-all duration-300 focus:outline-none ${
                   selectedService
-                    ? "bg-primary hover:bg-primary-container active:scale-[0.99] text-white"
+                    ? "bg-primary hover:bg-primary-container hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99] text-white"
                     : "bg-slate-300 text-slate-500 cursor-not-allowed"
-                }`}
+                } ${isCtaPopping ? "animate-[ctaPop_380ms_cubic-bezier(0.22,1,0.36,1)]" : ""}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1042,8 +1181,8 @@ export default function App() {
                   <line x1="8" y1="12" x2="16" y2="12" />
                 </svg>
                 {selectedService
-                  ? "Ambil & Cetak Nomor Antrean"
-                  : "Pilih Loket Terlebih Dahulu"}
+                  ? "Ambil Nomor dan Cetak Tiket"
+                  : "Pilih Layanan Terlebih Dahulu"}
               </button>
             </div>
           </div>
@@ -1051,42 +1190,113 @@ export default function App() {
       </main>
 
       {appState === "modal" && svc && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl flex flex-col items-center overflow-hidden border border-slate-100">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          style={{
+            animation: isModalClosing
+              ? "modalBackdropOut 180ms ease-in both"
+              : "modalBackdropIn 220ms ease-out both",
+          }}
+        >
+          <div
+            className="bg-white w-full max-w-sm rounded-3xl shadow-2xl flex flex-col items-center overflow-hidden border border-slate-100"
+            style={{
+              animation: isModalClosing
+                ? "modalSpringOut 240ms cubic-bezier(0.4, 0, 1, 1) both"
+                : "modalSpringIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both",
+            }}
+          >
             <div className="w-full h-2 bg-[#002e5b]" />
-            <div className="p-7 flex flex-col items-center w-full text-center gap-4">
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">
-                Konfirmasi Pengambilan Nomor
+            <div
+              className="p-6 flex flex-col items-center w-full text-center gap-4"
+              style={{
+                animation: isModalClosing
+                  ? "modalContentOut 170ms ease-in both"
+                  : undefined,
+              }}
+            >
+              <h3
+                className="text-xl font-bold text-slate-900 tracking-tight"
+                style={{
+                  animation:
+                    "modalItemIn 360ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both",
+                }}
+              >
+                Konfirmasi Ambil Nomor Antrean
               </h3>
-              <span className="text-xs font-semibold text-primary bg-blue-50 border border-blue-100 px-4 py-1 rounded-full">
+              <span
+                className="text-xs font-semibold text-primary bg-blue-50 border border-blue-100 px-4 py-1 rounded-full"
+                style={{
+                  animation:
+                    "modalItemIn 360ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both",
+                }}
+              >
                 {svc.name}
               </span>
               {customerName && (
-                <span className="text-sm text-slate-500 flex items-center gap-1">
+                <span
+                  className="text-sm text-slate-500 flex items-center gap-1"
+                  style={{
+                    animation:
+                      "modalItemIn 360ms cubic-bezier(0.22, 1, 0.36, 1) 190ms both",
+                  }}
+                >
                   <User size={14} /> {customerName}
                 </span>
               )}
 
-              <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-5 px-4">
+              <div
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-4"
+                style={{
+                  animation:
+                    "modalItemIn 380ms cubic-bezier(0.22, 1, 0.36, 1) 230ms both",
+                }}
+              >
                 <p className="text-xs text-slate-500 font-medium mb-2">
-                  Konfirmasi Cetak Tiket
+                  Ringkasan Antrean
                 </p>
-                <p className="text-sm font-medium text-slate-700">
-                  Anda akan mengambil nomor untuk:
-                </p>
-                <p className="text-lg font-bold text-primary mt-1">
+                <p className="text-sm font-semibold text-slate-800">
                   {svc.loket}
                 </p>
-                <p className="text-xs text-slate-500 mt-2">
-                  Nomor antrean dibuat saat Anda menekan tombol cetak.
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <div className="rounded-lg border border-slate-200 bg-white px-2 py-2">
+                    <p className="text-[10px] text-slate-500">Nomor Terakhir</p>
+                    <p className="text-base font-bold text-[#005BAC] tabular-nums whitespace-nowrap">
+                      {selectedLastNumber}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-white px-2 py-2">
+                    <p className="text-[10px] text-slate-500">
+                      Nomor Berikutnya
+                    </p>
+                    <p className="text-base font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                      {selectedNextNumber}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  Setelah konfirmasi, sistem akan membuat nomor antrean lalu
+                  mencetak tiket.
                 </p>
               </div>
 
-              <p className="text-sm text-slate-500">
-                Silakan tunggu panggilan di ruang tunggu.
+              <p
+                className="text-sm text-slate-500"
+                style={{
+                  animation:
+                    "modalItemIn 360ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both",
+                }}
+              >
+                Pastikan pelanggan menerima tiket sebelum halaman ditutup.
               </p>
 
-              <div className="w-full flex flex-col gap-3 mt-2">
+              <div
+                className="w-full flex flex-col gap-3 mt-2"
+                style={{
+                  animation:
+                    "modalItemIn 380ms cubic-bezier(0.22, 1, 0.36, 1) 330ms both",
+                }}
+              >
                 <button
                   onClick={handleConfirm}
                   disabled={loading}
@@ -1097,10 +1307,10 @@ export default function App() {
                   ) : (
                     <Printer size={20} />
                   )}
-                  {loading ? "Memproses..." : "Ambil & Cetak Nomor Antrean"}
+                  {loading ? "Memproses..." : "Ambil Nomor dan Cetak Tiket"}
                 </button>
                 <button
-                  onClick={() => setAppState("select")}
+                  onClick={() => closeModalWithOutro("select")}
                   disabled={loading}
                   className="w-full text-primary py-3 rounded-xl font-semibold hover:bg-slate-50 transition-colors"
                 >
@@ -1111,6 +1321,54 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes modalBackdropIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        @keyframes modalBackdropOut {
+          0% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes modalSpringIn {
+          0% { transform: translateY(24px) scale(0.94); opacity: 0; }
+          60% { transform: translateY(-4px) scale(1.015); opacity: 1; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes modalSpringOut {
+          0% { transform: translateY(0) scale(1); opacity: 1; }
+          100% { transform: translateY(16px) scale(0.97); opacity: 0; }
+        }
+        @keyframes modalItemIn {
+          0% { transform: translateY(10px) scale(0.98); opacity: 0; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes modalContentOut {
+          0% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(6px); }
+        }
+        @keyframes successPulse {
+          0% { transform: scale(1); box-shadow: 0 2px 10px rgba(14, 116, 144, 0.10); }
+          50% { transform: scale(1.025); box-shadow: 0 8px 24px rgba(14, 116, 144, 0.18); }
+          100% { transform: scale(1); box-shadow: 0 2px 10px rgba(14, 116, 144, 0.10); }
+        }
+        @keyframes servicePulse {
+          0% { transform: scale(1); }
+          35% { transform: scale(1.02); }
+          100% { transform: scale(1); }
+        }
+        @keyframes ctaPop {
+          0% { transform: scale(1); }
+          45% { transform: scale(1.03); }
+          100% { transform: scale(1); }
+        }
+        @keyframes shimmerSlide {
+          0% { transform: translateX(-130%); opacity: 0; }
+          25% { opacity: 1; }
+          100% { transform: translateX(130%); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

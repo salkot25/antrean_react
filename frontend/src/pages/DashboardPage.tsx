@@ -235,7 +235,7 @@ export default function DashboardPage() {
   const [waitingQueues, setWaitingQueues] = useState<any[]>([]);
   const [todayHistory, setTodayHistory] = useState<any[]>([]);
   const [runningText, setRunningText] = useState(
-    "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan.",
+    "Selamat datang di PLN ULP Salatiga. Ambil nomor antrean, lalu tunggu panggilan di ruang tunggu.",
   );
   const [loading, setLoading] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
@@ -649,7 +649,7 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-sm sm:text-base text-slate-500 mt-1">
-              Ringkasan operasional antrean secara real-time.
+              Pantau ringkasan operasional antrean secara real-time.
             </p>
           </div>
         </div>
@@ -661,10 +661,10 @@ export default function DashboardPage() {
             onClick={fetchData}
             disabled={loading}
             className="bg-primary text-white px-4 py-2 rounded-xl border border-blue-900/20 transition-all flex items-center gap-2 text-sm font-medium disabled:opacity-60"
-            title="Refresh data"
+            title="Perbarui data antrean"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            Refresh
+            Perbarui
           </button>
         </div>
       </header>
@@ -738,7 +738,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <BarChart2 size={22} className="text-primary" />
-                  Status Antrian Live
+                  Status Antrean Live
                 </h2>
                 <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
@@ -792,7 +792,7 @@ export default function DashboardPage() {
                     Antrean Hari Ini
                   </h2>
                   <p className="text-xs text-outline">
-                    Distribusi antrian per jam
+                    Distribusi antrean per jam
                   </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -890,7 +890,7 @@ export default function DashboardPage() {
                 {activity.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 text-outline text-xs gap-2 opacity-60">
                     <Clock size={24} />
-                    <span>Belum ada aktivitas</span>
+                    <span>Belum ada aktivitas antrean</span>
                   </div>
                 ) : (
                   activity.map((item) => (
@@ -947,7 +947,7 @@ export default function DashboardPage() {
                   onClick={() => navigate("/admin/logs?module=queue")}
                   className="text-[10px] font-bold text-primary-container uppercase tracking-widest hover:underline"
                 >
-                  Lihat Log Lengkap
+                  Lihat Log Antrean
                 </button>
               </div>
             </div>
@@ -956,7 +956,7 @@ export default function DashboardPage() {
             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="p-md border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface">
-                  Perincian Antrian
+                  Perincian Antrean
                 </h2>
                 <p className="text-xs text-outline">
                   Sesi hari ini per layanan

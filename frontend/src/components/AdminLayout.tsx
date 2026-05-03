@@ -27,18 +27,18 @@ export default function AdminLayout() {
       items: [
         { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
         {
-          name: "Queue Control",
+          name: "Kendali Antrean",
           path: "/admin/queue",
           icon: MousePointerClick,
         },
-        { name: "Service Config", path: "/admin/config", icon: Settings },
+        { name: "Konfigurasi Layanan", path: "/admin/config", icon: Settings },
       ],
     },
     {
       label: "Pengguna & Sistem",
       items: [
-        { name: "User Management", path: "/admin/users", icon: Users },
-        { name: "Logs", path: "/admin/logs", icon: ScrollText },
+        { name: "Manajemen Pengguna", path: "/admin/users", icon: Users },
+        { name: "Log Sistem", path: "/admin/logs", icon: ScrollText },
       ],
     },
     {

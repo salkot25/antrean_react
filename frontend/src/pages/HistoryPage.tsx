@@ -147,25 +147,25 @@ export default function HistoryPage() {
 
       <main className="flex-1 w-full max-w-md mx-auto px-4 pt-6 pb-12 flex flex-col gap-5">
         <p className="text-sm text-gray-500 text-center">
-          Riwayat nomor antrian hari ini (sinkron dari backend)
+          Pantau riwayat nomor antrean hari ini yang tersinkron dari backend.
         </p>
 
         {loading && tickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
             <RefreshCw size={32} className="animate-spin" />
-            <p className="text-sm">Memuat data antrian...</p>
+            <p className="text-sm">Memuat data antrean hari ini...</p>
           </div>
         ) : tickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
             <Inbox size={48} strokeWidth={1.2} />
             <p className="text-sm font-medium">
-              Belum ada riwayat tiket hari ini
+              Belum ada riwayat tiket untuk hari ini
             </p>
             <button
               onClick={() => navigate("/ambil")}
               className="mt-2 text-[#002e5b] text-sm font-semibold hover:underline"
             >
-              Ambil Nomor Antrian
+              Ambil Nomor Antrean Sekarang
             </button>
           </div>
         ) : (

@@ -340,9 +340,9 @@ export default function AboutPage() {
           </div>
           <p className="text-sm text-slate-600 leading-relaxed">
             Sistem Antrean Digital PLN ULP Salatiga merupakan solusi
-            komprehensif untuk mengoptimalkan layanan manajemen antrean.
-            Mendukung antrian loket layanan secara real-time dengan sinkronisasi
-            lintas perangkat.
+            komprehensif untuk mengoptimalkan layanan manajemen antrean. Pantau
+            antrean loket layanan secara real-time dengan sinkronisasi lintas
+            perangkat.
           </p>
           <div className="mt-4 grid grid-cols-3 gap-3">
             {[
@@ -406,7 +406,7 @@ export default function AboutPage() {
               },
               {
                 icon: Monitor,
-                label: "Display Live",
+                label: "Tampilan Live",
                 sub: "Tampilan antrean real-time",
                 bg: "bg-emerald-50",
                 color: "text-emerald-700",
@@ -509,7 +509,7 @@ export default function AboutPage() {
                 color: "bg-rose-100 text-rose-800 border-rose-200",
               },
               {
-                label: "Bluetooth Print",
+                label: "Cetak Bluetooth",
                 color: "bg-amber-100 text-amber-800 border-amber-200",
               },
               {

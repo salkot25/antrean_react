@@ -67,7 +67,7 @@ export default function AdminPage() {
   }, [service]);
 
   const handleCall = async (_skipId?: string) => {
-    if (queues.length === 0) return alert("Tidak ada antrian menunggu.");
+    if (queues.length === 0) return alert("Tidak ada antrean yang menunggu.");
     setLoading(true);
     try {
       // Pass the service name based on dropdown choice or first queue's service if "Semua Layanan"
@@ -92,14 +92,14 @@ export default function AdminPage() {
       fetchQueues();
     } catch (error) {
       console.error(error);
-      alert("Gagal memanggil antrian.");
+      alert("Gagal memanggil antrean.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRecall = () => {
-    if (!lastCalled) return alert("Belum ada antrian yang dipanggil.");
+    if (!lastCalled) return alert("Belum ada antrean yang dipanggil.");
     speakQueue(
       lastCalled.number,
       lastCalled.counter || "Loket Customer Service",
@@ -137,7 +137,7 @@ export default function AdminPage() {
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
-            Queue Control
+            Kendali Antrean
           </h1>
           <p className="text-sm sm:text-base text-slate-500 mt-1">
             Kendalikan alur pemanggilan antrean secara real-time.
@@ -151,7 +151,7 @@ export default function AdminPage() {
             className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white px-4 py-2 rounded-xl border border-red-700 transition-all flex items-center justify-center gap-2 text-sm font-medium"
           >
             <RotateCcw size={16} className={resetting ? "animate-spin" : ""} />
-            Reset Data Antrian
+            Reset Data Antrean
           </button>
           <select
             className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-300 focus-within:border-[#004482] focus-within:ring-1 focus-within:ring-[#004482] transition-all cursor-pointer outline-none text-sm font-medium"
@@ -188,7 +188,7 @@ export default function AdminPage() {
             <p className="text-xl text-slate-500 mt-4">
               {lastCalled
                 ? `${lastCalled.service === "CS" ? "Customer Service" : lastCalled.service === "PLN" ? "PLN Mobile Experience" : lastCalled.service === "CC" ? "Customer Care" : lastCalled.service}`
-                : "Belum ada antrian"}
+                : "Belum ada antrean"}
             </p>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function AdminPage() {
               className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 border border-red-200 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
             >
               <Ban size={32} />
-              <span className="text-sm font-semibold">Lewati Antrian</span>
+              <span className="text-sm font-semibold">Lewati Antrean</span>
             </button>
           </div>
         </div>
@@ -238,13 +238,13 @@ export default function AdminPage() {
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col min-h-[300px]">
         <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
           <h3 className="text-lg sm:text-2xl font-semibold text-[#191c21]">
-            Daftar Antrian
+            Daftar Antrean
           </h3>
           <div className="flex items-center gap-4">
             <button
               onClick={fetchQueues}
               className="text-slate-500 hover:text-[#005BAC] transition-colors p-2"
-              title="Refresh data antrian"
+              title="Perbarui data antrean"
             >
               <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
             </button>
@@ -268,7 +268,7 @@ export default function AdminPage() {
             <thead className="bg-white border-b border-slate-200 sticky top-0">
               <tr>
                 <th className="py-3 px-3 sm:py-4 sm:px-6 text-sm text-slate-500 font-semibold">
-                  No. Antrian
+                  No. Antrean
                 </th>
                 <th className="py-3 px-3 sm:py-4 sm:px-6 text-sm text-slate-500 font-semibold">
                   Layanan
@@ -332,7 +332,7 @@ export default function AdminPage() {
                     colSpan={4}
                     className="py-12 px-6 text-center text-slate-500"
                   >
-                    Tidak ada antrian yang menunggu untuk layanan ini.
+                    Tidak ada antrean yang menunggu untuk layanan ini.
                   </td>
                 </tr>
               )}

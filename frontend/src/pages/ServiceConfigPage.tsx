@@ -55,7 +55,7 @@ export default function ServiceConfigPage() {
   const [logsAutoCleanup, setLogsAutoCleanup] = useState(false);
   const [logsRetentionDays, setLogsRetentionDays] = useState(30);
   const [runningText, setRunningText] = useState(
-    "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan. Pelayanan kami mengutamakan kepuasan Anda.",
+    "Selamat datang di PLN ULP Salatiga. Ambil nomor antrean, lalu tunggu panggilan di ruang tunggu. Pelayanan kami mengutamakan kepuasan Anda.",
   );
   const [availableVoices, setAvailableVoices] = useState<
     SpeechSynthesisVoice[]
@@ -316,7 +316,7 @@ export default function ServiceConfigPage() {
                   Memuat Konfigurasi
                 </p>
                 <p className="text-xs text-on-surface-variant">
-                  Mengambil data terbaru dari server...
+                  Perbarui data terbaru dari server...
                 </p>
               </div>
             </div>
@@ -327,10 +327,10 @@ export default function ServiceConfigPage() {
         <header className="mb-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
-              Service Config
+              Konfigurasi Layanan
             </h1>
             <p className="text-sm sm:text-base text-slate-500 mt-1">
-              Pengaturan tampilan TV dan fungsionalitas kiosk.
+              Atur tampilan layar TV dan fungsi Antrean App dalam satu panel.
             </p>
           </div>
           <div
@@ -366,7 +366,7 @@ export default function ServiceConfigPage() {
               <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <Building2 size={22} className="text-secondary" />
-                  General Configuration
+                  Konfigurasi Umum
                 </h2>
               </div>
               <div className="p-md space-y-sm">
@@ -382,14 +382,15 @@ export default function ServiceConfigPage() {
                     className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
                   />
                   <p className="text-xs text-on-surface-variant mt-1">
-                    Ditampilkan di header layar TV Display dan tiket Kiosk.
+                    Tampilkan nama kantor di header layar TV dan tiket Antrean
+                    App.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
                   <div>
                     <label className="block font-label-sm text-on-surface-variant mb-base">
-                      Waktu Reset Nomor Antrian
+                      Waktu Reset Nomor Antrean
                     </label>
                     <input
                       type="time"
@@ -398,7 +399,7 @@ export default function ServiceConfigPage() {
                       className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
                     />
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Nomor antrian direset setiap hari pada jam ini.
+                      Reset nomor antrean setiap hari pada jam ini.
                     </p>
                   </div>
 
@@ -446,7 +447,7 @@ export default function ServiceConfigPage() {
                     </div>
                     <div className="flex-1">
                       <span className="font-label-sm text-on-surface font-semibold block">
-                        Aktifkan Auto Hapus Logs
+                        Aktifkan Hapus Log Otomatis
                       </span>
                       <span className="text-xs text-on-surface-variant">
                         Jika aktif, backend otomatis menghapus data log yang
@@ -457,7 +458,7 @@ export default function ServiceConfigPage() {
 
                   <div>
                     <label className="block font-label-sm text-on-surface-variant mb-base">
-                      Simpan Logs Maksimal (hari)
+                      Batas Simpan Log (hari)
                     </label>
                     <input
                       type="number"
@@ -477,20 +478,20 @@ export default function ServiceConfigPage() {
                       className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface disabled:opacity-60"
                     />
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Hapus manual tetap tersedia dari halaman Logs dengan
-                      tombol "Hapus Logs" (fitur existing).
+                      Hapus manual tetap tersedia di halaman Log melalui tombol
+                      "Hapus Log".
                     </p>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* Kiosk Printer Card */}
+            {/* Antrean App Printer Card */}
             <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <Printer size={22} className="text-secondary" />
-                  Kiosk Printer
+                  Printer Antrean App
                 </h2>
               </div>
               <div className="p-md">
@@ -510,11 +511,11 @@ export default function ServiceConfigPage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="font-label-sm text-on-surface group-hover:text-primary transition-colors font-semibold">
-                      Otomatis Cetak Tiket
+                      Aktifkan Cetak Tiket Otomatis
                     </span>
                     <span className="text-xs text-on-surface-variant">
-                      Dialog print browser otomatis terbuka setelah pelanggan
-                      mengambil antrian di mesin Kiosk.
+                      Buka dialog cetak browser otomatis setelah pelanggan
+                      mengambil antrean di mesin Antrean App.
                     </span>
                   </div>
                 </label>
@@ -530,15 +531,16 @@ export default function ServiceConfigPage() {
                       className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
                     >
                       <option value="auto">
-                        Auto (Bridge lalu fallback browser)
+                        Otomatis (Bridge lalu fallback browser)
                       </option>
                       <option value="bridge">
-                        Bridge Only (Android kiosk)
+                        Bridge Saja (Antrean App Android)
                       </option>
-                      <option value="browser">Browser Only</option>
+                      <option value="browser">Browser Saja</option>
                     </select>
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Disarankan Auto untuk transisi bertahap ke Android bridge.
+                      Gunakan mode Otomatis untuk transisi bertahap ke Android
+                      bridge.
                     </p>
                   </div>
 
@@ -609,12 +611,12 @@ export default function ServiceConfigPage() {
               <div className="px-md py-sm border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <MonitorPlay size={22} className="text-secondary" />
-                  Display &amp; Media
+                  Tampilan &amp; Media
                 </h2>
                 <button
                   onClick={fetchConfig}
                   disabled={loading}
-                  title="Muat ulang pengaturan"
+                  title="Perbarui pengaturan"
                   className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container"
                 >
                   <RefreshCw
@@ -660,7 +662,7 @@ export default function ServiceConfigPage() {
                     className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface resize-none"
                   />
                   <p className="text-xs text-on-surface-variant mt-1">
-                    Teks berjalan yang tampil di bagian bawah layar TV Display.
+                    Tampilkan teks berjalan di bagian bawah layar TV.
                   </p>
                 </div>
 
@@ -685,7 +687,7 @@ export default function ServiceConfigPage() {
                       className="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
                     />
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Volume saat tidak ada pemanggilan antrian.
+                      Atur volume saat tidak ada pemanggilan antrean.
                     </p>
                   </div>
 
@@ -711,7 +713,7 @@ export default function ServiceConfigPage() {
                       className="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
                     />
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Volume selama TTS membaca antrian (maks. 50%).
+                      Atur volume saat TTS membacakan antrean (maks. 50%).
                     </p>
                   </div>
                 </div>
@@ -723,7 +725,7 @@ export default function ServiceConfigPage() {
               <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
                 <h2 className="font-heading-md text-on-surface flex items-center gap-2">
                   <Volume2 size={22} className="text-secondary" />
-                  Audio &amp; Voice
+                  Audio &amp; Suara
                 </h2>
               </div>
               <div className="p-md space-y-sm">
@@ -737,7 +739,7 @@ export default function ServiceConfigPage() {
                     className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
                   >
                     <option value="">
-                      -- Default / Otomatis (Indonesia) --
+                      -- Bawaan / Otomatis (Indonesia) --
                     </option>
                     {availableVoices.map((voice, idx) => (
                       <option key={idx} value={voice.voiceURI}>
@@ -798,7 +800,7 @@ export default function ServiceConfigPage() {
                   className="w-full mt-2 py-2 px-4 border border-outline-variant rounded-lg font-label-sm text-on-surface hover:bg-surface-container transition-colors flex justify-center items-center gap-2"
                 >
                   <Play size={16} />
-                  Test Audio
+                  Uji Audio
                 </button>
               </div>
             </section>
@@ -812,7 +814,7 @@ export default function ServiceConfigPage() {
             disabled={loading}
             className="py-2 px-6 border border-slate-300 rounded-xl font-label-sm text-on-surface hover:bg-slate-50 transition-colors"
           >
-            Discard
+            Batalkan Perubahan
           </button>
           <button
             onClick={handleSave}
