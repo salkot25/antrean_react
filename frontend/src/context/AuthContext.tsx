@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (stored) {
         const session: AuthSession = JSON.parse(stored);
         const now = Date.now();
-        
+
         // Check if session is expired on load
         if (
           now - session.lastActivity > INACTIVITY_TIMEOUT_MS ||
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const handleActivity = () => {
       if (throttleTimer) return;
-      
+
       // Throttle updates to localstorage to at most once per minute
       throttleTimer = window.setTimeout(() => {
         throttleTimer = null;
@@ -137,11 +137,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-    events.forEach(event => window.addEventListener(event, handleActivity, { passive: true }));
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((event) =>
+      window.addEventListener(event, handleActivity, { passive: true }),
+    );
 
     return () => {
-      events.forEach(event => window.removeEventListener(event, handleActivity));
+      events.forEach((event) =>
+        window.removeEventListener(event, handleActivity),
+      );
       if (throttleTimer) window.clearTimeout(throttleTimer);
     };
   }, [user]);
@@ -153,11 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result?.success && result?.user) {
         const authUser: AuthUser = result.user;
         setUser(authUser);
-        
+
         const session: AuthSession = {
           user: authUser,
           loginAt: Date.now(),
-          lastActivity: Date.now()
+          lastActivity: Date.now(),
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
         return { success: true };

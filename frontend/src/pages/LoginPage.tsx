@@ -11,7 +11,8 @@ export default function LoginPage() {
   const location = useLocation();
 
   const from = (location.state as any)?.from?.pathname || "/admin/dashboard";
-  const isSessionExpired = new URLSearchParams(location.search).get("session") === "expired";
+  const isSessionExpired =
+    new URLSearchParams(location.search).get("session") === "expired";
 
   const [officeName, setOfficeName] = useState("PLN ULP Salatiga");
   const [username, setUsername] = useState("");
@@ -223,7 +224,9 @@ export default function LoginPage() {
               {isSessionExpired && !error && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
                   <span className="shrink-0 mt-0.5">⏱️</span>
-                  <span>Sesi login Anda telah berakhir. Silakan login kembali.</span>
+                  <span>
+                    Sesi login Anda telah berakhir. Silakan login kembali.
+                  </span>
                 </div>
               )}
 

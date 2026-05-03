@@ -89,7 +89,11 @@ export default function AdminPage() {
 
   const handleCall = async (_skipId?: string) => {
     if (queues.length === 0) {
-      showModal("Antrean Kosong", "Tidak ada antrean yang menunggu saat ini.", "info");
+      showModal(
+        "Antrean Kosong",
+        "Tidak ada antrean yang menunggu saat ini.",
+        "info",
+      );
       return;
     }
     setLoading(true);
@@ -116,7 +120,11 @@ export default function AdminPage() {
       fetchQueues();
     } catch (error) {
       console.error(error);
-      showModal("Gagal Memanggil", "Gagal memanggil antrean. Silakan coba lagi.", "error");
+      showModal(
+        "Gagal Memanggil",
+        "Gagal memanggil antrean. Silakan coba lagi.",
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -124,7 +132,11 @@ export default function AdminPage() {
 
   const handleRecall = () => {
     if (!lastCalled) {
-      showModal("Belum Ada Panggilan", "Belum ada antrean yang dipanggil sebelumnya.", "info");
+      showModal(
+        "Belum Ada Panggilan",
+        "Belum ada antrean yang dipanggil sebelumnya.",
+        "info",
+      );
       return;
     }
     speakQueue(
@@ -152,10 +164,18 @@ export default function AdminPage() {
             }
             setLastCalled(null);
             await fetchQueues();
-            showModal("Reset Berhasil", "Data antrean berhasil direset.", "success");
+            showModal(
+              "Reset Berhasil",
+              "Data antrean berhasil direset.",
+              "success",
+            );
           } catch (error) {
             console.error(error);
-            showModal("Reset Gagal", "Gagal reset data antrean. Silakan coba lagi.", "error");
+            showModal(
+              "Reset Gagal",
+              "Gagal reset data antrean. Silakan coba lagi.",
+              "error",
+            );
           } finally {
             setResetting(false);
           }
@@ -201,8 +221,12 @@ export default function AdminPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-bold text-slate-900">{appModal.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{appModal.message}</p>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {appModal.title}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                    {appModal.message}
+                  </p>
                 </div>
               </div>
             </div>

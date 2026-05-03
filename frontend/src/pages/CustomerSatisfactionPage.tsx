@@ -66,7 +66,10 @@ export default function CustomerSatisfactionPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [autoRedirectEnabled, setAutoRedirectEnabled] = useState(true);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
-  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
+  const [errorModal, setErrorModal] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
 
   const sidebarNavGroups = [
     {
@@ -174,8 +177,12 @@ export default function CustomerSatisfactionPage() {
                   <AlertTriangle size={20} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-bold text-slate-900">{errorModal.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{errorModal.message}</p>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {errorModal.title}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                    {errorModal.message}
+                  </p>
                 </div>
               </div>
             </div>
