@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PLN QMS Kiosk</string>
+    <style name="Theme.PLNQMSKiosk" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#002e5b</item>
+        <item name="colorPrimaryVariant">#00658d</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#00658d</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="android:statusBarColor">#002e5b</item>
+        <item name="android:navigationBarColor">#002e5b</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+</resources>

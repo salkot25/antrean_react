@@ -120,7 +120,7 @@ export default function AdminLayout() {
             className="h-10 w-10 object-contain"
           />
           <span className="text-sm font-bold text-[#002e5b] leading-tight">
-            QMS PLN
+            Sistem Antrean Digital
             <br />
             <span className="text-xs font-medium text-slate-500">
               {officeName}

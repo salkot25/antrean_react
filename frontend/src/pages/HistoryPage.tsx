@@ -159,7 +159,7 @@ export default function HistoryPage() {
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400">
             <Inbox size={48} strokeWidth={1.2} />
             <p className="text-sm font-medium">
-              Belum ada riwayat tiket untuk hari ini
+              Belum ada riwayat antrean untuk hari ini
             </p>
             <button
               onClick={() => navigate("/ambil")}

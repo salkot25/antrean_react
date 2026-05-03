@@ -382,7 +382,7 @@ export default function ServiceConfigPage() {
                     className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
                   />
                   <p className="text-xs text-on-surface-variant mt-1">
-                    Tampilkan nama kantor di header layar TV dan tiket Antrean
+                    Tampilkan nama kantor di header layar TV dan nomor Antrean
                     App.
                   </p>
                 </div>
@@ -511,7 +511,7 @@ export default function ServiceConfigPage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="font-label-sm text-on-surface group-hover:text-primary transition-colors font-semibold">
-                      Aktifkan Cetak Tiket Otomatis
+                      Aktifkan Cetak Antrean Otomatis
                     </span>
                     <span className="text-xs text-on-surface-variant">
                       Buka dialog cetak browser otomatis setelah pelanggan

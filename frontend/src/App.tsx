@@ -604,10 +604,10 @@ export default function App() {
 
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-slate-900 mb-1 tracking-tight">
-              Tiket Berhasil Dicetak
+              Nomor Antrean Berhasil Dicetak
             </h2>
             <p className="text-slate-500 max-w-xs mx-auto text-sm">
-              Serahkan tiket kepada pelanggan, lalu arahkan ke ruang tunggu
+              Serahkan nomor antrean kepada pelanggan, lalu arahkan ke ruang tunggu
               hingga nomor dipanggil.
             </p>
           </div>
@@ -673,7 +673,7 @@ export default function App() {
               onClick={handleManualPrint}
               className="w-full text-primary bg-white border border-slate-300 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-slate-50 hover:-translate-y-0.5 active:scale-95 transition-all"
             >
-              <Printer size={20} /> Cetak Ulang Tiket
+              <Printer size={20} /> Cetak Ulang Antrean
             </button>
           </div>
 
@@ -847,7 +847,7 @@ export default function App() {
             className="h-10 w-10 object-contain"
           />
           <span className="text-sm font-bold text-[#002e5b] leading-tight">
-            QMS PLN
+            Sistem Antrean Digital
             <br />
             <span className="text-xs font-medium text-slate-500">
               {officeName}
@@ -936,13 +936,13 @@ export default function App() {
             Ambil Nomor Antrean
           </h1>
           <p className="text-[11px] sm:text-xs text-white/70">
-            Pusat Pengambilan Tiket
+            Pusat Pengambilan Antrean
           </p>
         </div>
         <button
           onClick={() => navigate("/history")}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
-          title="Riwayat Cetak Tiket"
+          title="Riwayat Cetak Antrean"
         >
           <History size={22} />
         </button>
@@ -1212,7 +1212,7 @@ export default function App() {
                   <line x1="8" y1="12" x2="16" y2="12" />
                 </svg>
                 {selectedService
-                  ? "Ambil Nomor dan Cetak Tiket"
+                  ? "Ambil Nomor dan Cetak Antrean"
                   : "Pilih Layanan Terlebih Dahulu"}
               </button>
             </div>
@@ -1307,7 +1307,7 @@ export default function App() {
                 </div>
                 <p className="text-xs text-slate-500 mt-3">
                   Setelah konfirmasi, sistem akan membuat nomor antrean lalu
-                  mencetak tiket.
+                  mencetak nomor antrean.
                 </p>
               </div>
 
@@ -1318,7 +1318,7 @@ export default function App() {
                     "modalItemIn 360ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both",
                 }}
               >
-                Pastikan pelanggan menerima tiket sebelum halaman ditutup.
+                Pastikan pelanggan menerima nomor antrean sebelum halaman ditutup.
               </p>
 
               <div
@@ -1338,7 +1338,7 @@ export default function App() {
                   ) : (
                     <Printer size={20} />
                   )}
-                  {loading ? "Memproses..." : "Ambil Nomor dan Cetak Tiket"}
+                  {loading ? "Memproses..." : "Ambil Nomor dan Cetak Antrean"}
                 </button>
                 <button
                   onClick={() => closeModalWithOutro("select")}

@@ -163,7 +163,7 @@ export default function AboutPage() {
               className="h-10 w-10 object-contain"
             />
             <span className="text-sm font-bold text-[#002e5b] leading-tight">
-              QMS PLN
+              Sistem Antrean Digital
               <br />
               <span className="text-xs font-medium text-slate-500">
                 PLN ULP Salatiga
@@ -417,7 +417,7 @@ export default function AboutPage() {
             {[
               {
                 icon: ClipboardList,
-                label: "Tiket Digital",
+                label: "Antrean Digital",
                 sub: "Ambil & cetak nomor antrean",
                 bg: "bg-blue-50",
                 color: "text-blue-700",
@@ -458,7 +458,7 @@ export default function AboutPage() {
               {
                 icon: Bluetooth,
                 label: "Cetak Bluetooth",
-                sub: "Cetak tiket nirkabel",
+                sub: "Cetak antrean nirkabel",
                 bg: "bg-cyan-50",
                 color: "text-cyan-700",
                 border: "border-cyan-100",

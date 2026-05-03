@@ -1,0 +1,182 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="id.salkot.plnqms.debug"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <!-- Bluetooth Classic (SPP) -->
+12    <uses-permission
+12-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:5:5-6:38
+13        android:name="android.permission.BLUETOOTH"
+13-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:5:22-65
+14        android:maxSdkVersion="30" />
+14-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:6:9-35
+15    <uses-permission
+15-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:7:5-8:38
+16        android:name="android.permission.BLUETOOTH_ADMIN"
+16-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:7:22-71
+17        android:maxSdkVersion="30" />
+17-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:8:9-35
+18    <!-- Android 12+ Bluetooth permissions -->
+19    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+19-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:10:5-76
+19-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:10:22-73
+20    <uses-permission
+20-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:11:5-12:58
+21        android:name="android.permission.BLUETOOTH_SCAN"
+21-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:11:22-70
+22        android:usesPermissionFlags="neverForLocation" />
+22-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:12:9-55
+23
+24    <!-- Network for WebView -->
+25    <uses-permission android:name="android.permission.INTERNET" />
+25-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:15:5-67
+25-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:15:22-64
+26    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+26-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:16:5-79
+26-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:16:22-76
+27
+28    <uses-feature
+28-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:18:5-20:36
+29        android:name="android.hardware.bluetooth"
+29-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:19:9-50
+30        android:required="false" />
+30-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:20:9-33
+31
+32    <permission
+32-->[androidx.core:core:1.13.1] C:\Users\user\.gradle\caches\9.0.0\transforms\0580eaa478452c036127113b738295bc\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+33        android:name="id.salkot.plnqms.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+33-->[androidx.core:core:1.13.1] C:\Users\user\.gradle\caches\9.0.0\transforms\0580eaa478452c036127113b738295bc\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+34        android:protectionLevel="signature" />
+34-->[androidx.core:core:1.13.1] C:\Users\user\.gradle\caches\9.0.0\transforms\0580eaa478452c036127113b738295bc\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+35
+36    <uses-permission android:name="id.salkot.plnqms.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+36-->[androidx.core:core:1.13.1] C:\Users\user\.gradle\caches\9.0.0\transforms\0580eaa478452c036127113b738295bc\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+36-->[androidx.core:core:1.13.1] C:\Users\user\.gradle\caches\9.0.0\transforms\0580eaa478452c036127113b738295bc\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+37
+38    <application
+38-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:22:5-49:19
+39        android:name="id.salkot.plnqms.QMSApplication"
+39-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:23:9-39
+40        android:allowBackup="false"
+40-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:24:9-36
+41        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+41-->[androidx.core:core:1.13.1] C:\Users\user\.gradle\caches\9.0.0\transforms\0580eaa478452c036127113b738295bc\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+42        android:debuggable="true"
+43        android:extractNativeLibs="false"
+44        android:hardwareAccelerated="true"
+44-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:29:9-43
+45        android:label="@string/app_name"
+45-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:25:9-41
+46        android:supportsRtl="false"
+46-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:26:9-36
+47        android:theme="@style/Theme.PLNQMSKiosk"
+47-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:27:9-49
+48        android:usesCleartextTraffic="false" >
+48-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:28:9-45
+49        <activity
+49-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:31:9-42:20
+50            android:name="id.salkot.plnqms.MainActivity"
+50-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:32:13-41
+51            android:configChanges="orientation|screenSize|keyboardHidden"
+51-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:35:13-74
+52            android:exported="true"
+52-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:33:13-36
+53            android:launchMode="singleTop"
+53-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:37:13-43
+54            android:screenOrientation="landscape"
+54-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:34:13-50
+55            android:windowSoftInputMode="adjustResize" >
+55-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:36:13-55
+56            <intent-filter>
+56-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:38:13-41:29
+57                <action android:name="android.intent.action.MAIN" />
+57-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:39:17-69
+57-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:39:25-66
+58
+59                <category android:name="android.intent.category.LAUNCHER" />
+59-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:40:17-77
+59-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:40:27-74
+60            </intent-filter>
+61        </activity>
+62        <activity
+62-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:44:9-47:56
+63            android:name="id.salkot.plnqms.BluetoothPickerActivity"
+63-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:45:13-52
+64            android:exported="false"
+64-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:46:13-37
+65            android:theme="@style/Theme.PLNQMSKiosk" />
+65-->D:\Antigravity\antrean\android\app\src\main\AndroidManifest.xml:47:13-53
+66
+67        <provider
+67-->[androidx.emoji2:emoji2:1.3.0] C:\Users\user\.gradle\caches\9.0.0\transforms\8d97258633d21a81fd996a88aee8d432\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+68            android:name="androidx.startup.InitializationProvider"
+68-->[androidx.emoji2:emoji2:1.3.0] C:\Users\user\.gradle\caches\9.0.0\transforms\8d97258633d21a81fd996a88aee8d432\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:25:13-67
+69            android:authorities="id.salkot.plnqms.debug.androidx-startup"
+69-->[androidx.emoji2:emoji2:1.3.0] C:\Users\user\.gradle\caches\9.0.0\transforms\8d97258633d21a81fd996a88aee8d432\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:26:13-68
+70            android:exported="false" >
+70-->[androidx.emoji2:emoji2:1.3.0] C:\Users\user\.gradle\caches\9.0.0\transforms\8d97258633d21a81fd996a88aee8d432\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:27:13-37
+71            <meta-data
+71-->[androidx.emoji2:emoji2:1.3.0] C:\Users\user\.gradle\caches\9.0.0\transforms\8d97258633d21a81fd996a88aee8d432\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+72                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+72-->[androidx.emoji2:emoji2:1.3.0] C:\Users\user\.gradle\caches\9.0.0\transforms\8d97258633d21a81fd996a88aee8d432\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:30:17-75
+73                android:value="androidx.startup" />
+73-->[androidx.emoji2:emoji2:1.3.0] C:\Users\user\.gradle\caches\9.0.0\transforms\8d97258633d21a81fd996a88aee8d432\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:31:17-49
+74            <meta-data
+74-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\user\.gradle\caches\9.0.0\transforms\c8f4a8d1750a6b7e0baac13897e3fadd\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+75                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+75-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\user\.gradle\caches\9.0.0\transforms\c8f4a8d1750a6b7e0baac13897e3fadd\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+76                android:value="androidx.startup" />
+76-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\user\.gradle\caches\9.0.0\transforms\c8f4a8d1750a6b7e0baac13897e3fadd\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+77            <meta-data
+77-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+78                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+78-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+79                android:value="androidx.startup" />
+79-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+80        </provider>
+81
+82        <receiver
+82-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+83            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+83-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+84            android:directBootAware="false"
+84-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+85            android:enabled="true"
+85-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+86            android:exported="true"
+86-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+87            android:permission="android.permission.DUMP" >
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+88            <intent-filter>
+88-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+89                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+90            </intent-filter>
+91            <intent-filter>
+91-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+92                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+93            </intent-filter>
+94            <intent-filter>
+94-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+95                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+96            </intent-filter>
+97            <intent-filter>
+97-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+98                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\user\.gradle\caches\9.0.0\transforms\75e5bb98280e94f13685b12f580271a7\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+99            </intent-filter>
+100        </receiver>
+101    </application>
+102
+103</manifest>

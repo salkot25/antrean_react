@@ -163,7 +163,7 @@ function mapQueueLogToActivity(row: LogRow, idx: number): ActivityItem {
   if (event === "create_queue") {
     icon = <PlusCircle size={18} />;
     iconBg = "bg-tertiary-fixed/30 text-[#723100]";
-    title = number ? `Tiket baru ${number}` : "Tiket baru dibuat";
+    title = number ? `Antrean baru ${number}` : "Antrean baru dibuat";
     sub = `Layanan: ${getServiceLabel(service)}`;
   } else if (event === "call_queue") {
     icon = <Megaphone size={18} />;
@@ -357,11 +357,12 @@ export default function DashboardPage() {
 
     const counts = Array.from({ length: endHour - startHour + 1 }, () => 0);
     for (const row of todayHistory) {
-      const raw = row?.created_at || row?.date;
+      const raw = row?.created_at;
       if (!raw) continue;
       const dt = new Date(raw);
-      const hour = dt.getHours();
       if (Number.isNaN(dt.getTime())) continue;
+      // getHours() already returns local time in browser
+      const hour = dt.getHours();
       if (hour < startHour || hour > endHour) continue;
       counts[hour - startHour] += 1;
     }
@@ -560,7 +561,7 @@ export default function DashboardPage() {
         </div>
 
         <div class="grid">
-          <div class="card"><div class="k">Total Tiket</div><div class="v">${totalTickets}</div></div>
+          <div class="card"><div class="k">Total Antrean</div><div class="v">${totalTickets}</div></div>
           <div class="card"><div class="k">Dilayani</div><div class="v">${servedCount}</div></div>
           <div class="card"><div class="k">Menunggu</div><div class="v">${waitingCount}</div></div>
           <div class="card"><div class="k">Rata-rata Layanan</div><div class="v">${escapeHtml(avgServiceLabel)}</div></div>
@@ -678,7 +679,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-outline uppercase tracking-wider">
-                Total Tiket
+                Total Antrean
               </p>
               <h3 className="text-heading-lg font-bold text-primary">
                 {totalTickets}
@@ -822,7 +823,7 @@ export default function DashboardPage() {
                   <div className="absolute left-0 right-0 top-[10%] border-t border-dashed border-slate-200" />
                   <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-slate-200" />
 
-                  <div className="h-full w-full flex items-end justify-between gap-0.5 sm:gap-1">
+                  <div className="h-full w-full flex justify-between gap-0.5 sm:gap-1">
                     {chartHours.map((bar) => {
                       const now = new Date().getHours();
                       const isCurrentHour = bar.hour === now;
@@ -833,8 +834,9 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={bar.label}
-                          className="flex-1 flex flex-col items-center gap-1 group"
+                          className="flex-1 h-full flex flex-col items-center gap-1 group"
                         >
+                          <div className="flex-1 w-full flex items-end">
                           <div
                             className={`w-full rounded-t-lg relative transition-all duration-300 ${
                               isCurrentHour
@@ -848,6 +850,7 @@ export default function DashboardPage() {
                             <div className="absolute -top-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[9px] font-bold text-outline whitespace-nowrap transition-opacity">
                               {bar.label} ({bar.count})
                             </div>
+                          </div>
                           </div>
                           <span
                             className={`text-[8px] sm:text-[9px] font-medium transition-colors ${
@@ -882,7 +885,7 @@ export default function DashboardPage() {
                   Aktivitas Terkini
                 </h2>
                 <p className="text-xs text-outline">
-                  Event tiket secara real-time
+                  Event antrean secara real-time
                 </p>
               </div>
 
