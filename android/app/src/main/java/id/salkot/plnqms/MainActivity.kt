@@ -1,8 +1,10 @@
 package id.salkot.plnqms
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -28,6 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     // Kiosk URL – pointing to the deployed React app
     private val kioskUrl = "https://antrean.salkot.online/ambil"
+    private val kioskHost = "antrean.salkot.online"
 
     private val bluetoothPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -91,6 +94,19 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(printBridge, "AndroidPrintBridge")
 
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(
+                view: WebView,
+                request: WebResourceRequest
+            ): Boolean {
+                val url = request.url?.toString().orEmpty()
+                return handleExternalNavigation(url)
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                return handleExternalNavigation(url)
+            }
+
             override fun onPageFinished(view: WebView, url: String) {
                 binding.loadingView.visibility = View.GONE
             }
@@ -123,6 +139,67 @@ class MainActivity : AppCompatActivity() {
             binding.errorView.visibility = View.GONE
             binding.loadingView.visibility = View.VISIBLE
             webView.reload()
+        }
+    }
+
+    private fun handleExternalNavigation(rawUrl: String): Boolean {
+        if (rawUrl.isBlank()) return false
+
+        val uri = runCatching { Uri.parse(rawUrl) }.getOrNull() ?: return false
+        val scheme = (uri.scheme ?: "").lowercase()
+        val host = (uri.host ?: "").lowercase()
+
+        // Keep kiosk app pages inside WebView.
+        if ((scheme == "http" || scheme == "https") && host == kioskHost) {
+            return false
+        }
+
+        // Force WhatsApp-related navigations out to native app/browser.
+        if (scheme == "intent") {
+            return launchIntentUri(rawUrl)
+        }
+        if (scheme == "whatsapp") {
+            return launchExternalUri(uri)
+        }
+        if ((scheme == "http" || scheme == "https") && (host == "api.whatsapp.com" || host == "wa.me")) {
+            return launchExternalUri(uri)
+        }
+
+        return false
+    }
+
+    private fun launchIntentUri(rawUrl: String): Boolean {
+        val intent = runCatching {
+            Intent.parseUri(rawUrl, Intent.URI_INTENT_SCHEME)
+        }.getOrNull() ?: return false
+
+        return try {
+            intent.addCategory(Intent.CATEGORY_BROWSABLE)
+            intent.component = null
+            intent.selector = null
+            startActivity(intent)
+            true
+        } catch (_: ActivityNotFoundException) {
+            // If the target app is not installed, try browser fallback URL in intent extras.
+            val fallback = intent.getStringExtra("browser_fallback_url")
+            if (!fallback.isNullOrBlank()) {
+                launchExternalUri(Uri.parse(fallback))
+            } else {
+                false
+            }
+        }
+    }
+
+    private fun launchExternalUri(uri: Uri): Boolean {
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        return try {
+            startActivity(intent)
+            true
+        } catch (_: ActivityNotFoundException) {
+            false
         }
     }
 
