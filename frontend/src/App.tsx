@@ -820,17 +820,17 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] flex flex-col items-center font-['Inter']">
       {isSidebarOpen && (
         <div
-          className="sm:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
+          className="lg:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col sm:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col lg:translate-x-0 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="sm:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
+        <div className="lg:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
@@ -923,10 +923,10 @@ export default function App() {
         </div>
       </aside>
 
-      <header className="bg-primary text-white w-full sm:w-[calc(100%-280px)] sm:ml-[280px] h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
+      <header className="bg-primary text-white w-full lg:w-[calc(100%-280px)] lg:ml-[280px] h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
+          className="lg:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
           title="Buka menu"
         >
           <Menu size={22} />
@@ -948,7 +948,7 @@ export default function App() {
         </button>
       </header>
 
-      <main className="w-full sm:w-[calc(100%-280px)] sm:ml-[280px] max-w-[45.5rem] px-4 sm:px-5 flex-1 flex flex-col pt-5 sm:pt-7 gap-4 pb-28 lg:pb-8">
+      <main className="w-full lg:w-[calc(100%-280px)] lg:ml-[280px] max-w-[45.5rem] px-4 sm:px-5 flex-1 flex flex-col pt-5 sm:pt-7 gap-4 pb-28 lg:pb-8">
         <div className="w-full flex flex-col gap-4">
           <div className="flex flex-col gap-4">
             <div className="relative w-full bg-white rounded-3xl shadow-sm border border-white/70 px-5 py-6 overflow-hidden">
