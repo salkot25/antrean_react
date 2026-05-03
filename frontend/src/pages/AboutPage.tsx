@@ -80,8 +80,16 @@ export default function AboutPage() {
     const intentWhatsappBusiness = `intent://send?phone=${WHATSAPP_PHONE}&text=${encodedText}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
     const fallbackUrl = `https://api.whatsapp.com/send?phone=${WHATSAPP_PHONE}&text=${encodedText}`;
     const isAndroid = /Android/i.test(navigator.userAgent || "");
+    const isAndroidWebView =
+      isAndroid &&
+      (/(;\s?wv\))|\bwv\b/i.test(navigator.userAgent || "") ||
+        (/Version\/\d+\.\d+/i.test(navigator.userAgent || "") &&
+          !/Chrome\/\d+/i.test(navigator.userAgent || "")));
 
-    if (isAndroid) {
+    if (isAndroidWebView) {
+      // In Android WebView, intent/custom schemes often trigger a false offline error page.
+      window.location.href = fallbackUrl;
+    } else if (isAndroid) {
       const launchSequence = [
         intentWhatsapp,
         intentWhatsappBusiness,

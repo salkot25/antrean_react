@@ -5,6 +5,7 @@ import { Eye, EyeOff, ShieldCheck, Zap, X } from "lucide-react";
 import { getConfig } from "../api";
 
 export default function LoginPage() {
+  const WHATSAPP_PHONE = "6281999386550";
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotUsername, setForgotUsername] = useState("");
   const [forgotMessage, setForgotMessage] = useState("");
+  const [forgotError, setForgotError] = useState("");
 
   useEffect(() => {
     getConfig()
@@ -53,16 +55,70 @@ export default function LoginPage() {
   const handleForgotSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!forgotUsername.trim() || !forgotMessage.trim()) {
-      alert("Username dan pesan wajib diisi.");
+      setForgotError("Username dan pesan wajib diisi.");
       return;
     }
-    const waNumber = "6281999386550";
-    const text = `Halo Admin,\nSaya ingin meminta bantuan terkait akun saya.\n\nUsername: ${forgotUsername.trim()}\nPesan: ${forgotMessage.trim()}`;
-    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, "_blank");
+
+    const sentAt = new Date().toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const accessView = /Android/i.test(navigator.userAgent || "")
+      ? "Android"
+      : /Mobi|iPhone|iPad|Mobile/i.test(navigator.userAgent || "")
+        ? "Mobile Web"
+        : "Web Desktop";
+    const text = [
+      "Halo tim administrator PLN ULP Salatiga,",
+      "",
+      "Saya ingin meminta bantuan terkait akun login saya.",
+      `Username: ${forgotUsername.trim()}`,
+      `Pesan: ${forgotMessage.trim()}`,
+      "",
+      "Sumber kirim: Halaman Login - Hubungi Administrator",
+      `Tampilan akses: ${accessView}`,
+      "Jenis pengirim: Pengunjung Umum",
+      `Pengirim: ${forgotUsername.trim()}`,
+      "Peran: Belum Login",
+      `Waktu kirim: ${sentAt}`,
+    ].join("\n");
+
+    const encodedText = encodeURIComponent(text);
+    const appUrl = `whatsapp://send?phone=${WHATSAPP_PHONE}&text=${encodedText}`;
+    const intentWhatsapp = `intent://send?phone=${WHATSAPP_PHONE}&text=${encodedText}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+    const intentWhatsappBusiness = `intent://send?phone=${WHATSAPP_PHONE}&text=${encodedText}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+    const fallbackUrl = `https://api.whatsapp.com/send?phone=${WHATSAPP_PHONE}&text=${encodedText}`;
+    const isAndroid = /Android/i.test(navigator.userAgent || "");
+    const isAndroidWebView =
+      isAndroid &&
+      (/(;\s?wv\))|\bwv\b/i.test(navigator.userAgent || "") ||
+        (/Version\/\d+\.\d+/i.test(navigator.userAgent || "") &&
+          !/Chrome\/\d+/i.test(navigator.userAgent || "")));
+
+    if (isAndroidWebView) {
+      // In Android WebView, intent/custom schemes often trigger a false offline error page.
+      window.location.href = fallbackUrl;
+    } else if (isAndroid) {
+      [intentWhatsapp, intentWhatsappBusiness, appUrl, fallbackUrl].forEach(
+        (url, index) => {
+          window.setTimeout(() => {
+            if (document.visibilityState === "visible") {
+              window.location.href = url;
+            }
+          }, index * 700);
+        },
+      );
+    } else {
+      window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+    }
+
     setIsForgotModalOpen(false);
     setForgotUsername("");
     setForgotMessage("");
+    setForgotError("");
   };
 
   return (
@@ -215,7 +271,9 @@ export default function LoginPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 lg:text-outline hover:text-slate-600 lg:hover:text-on-surface transition-colors p-1"
                     tabIndex={-1}
                     aria-label={
-                      showPassword ? "Sembunyikan password" : "Tampilkan password"
+                      showPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
                     }
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -245,7 +303,10 @@ export default function LoginPage() {
               <p>
                 Lupa password?{" "}
                 <button
-                  onClick={() => setIsForgotModalOpen(true)}
+                  onClick={() => {
+                    setForgotError("");
+                    setIsForgotModalOpen(true);
+                  }}
                   className="text-primary hover:underline font-medium"
                 >
                   Hubungi administrator
@@ -284,6 +345,11 @@ export default function LoginPage() {
               </button>
             </div>
             <form onSubmit={handleForgotSubmit} className="p-5 space-y-4">
+              {forgotError && (
+                <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {forgotError}
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                   Username
@@ -307,6 +373,10 @@ export default function LoginPage() {
                   placeholder="Contoh: Tolong reset password saya karena lupa..."
                 />
               </div>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Pesan akan dikirim dengan format yang sama di mobile maupun web,
+                termasuk sumber kirim dan waktu kirim.
+              </p>
               <div className="pt-2">
                 <button
                   type="submit"
