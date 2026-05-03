@@ -233,6 +233,8 @@ export default function DisplayPage() {
     const number = apiData?.number || "--";
     const isCalling = !!callingState[fixed.loketName];
     const isServing = !isCalling && number !== "--";
+    const waitingCount: number = apiData?.waitingCount ?? 0;
+    const nextNumber: string = apiData?.nextNumber || "";
     return {
       loketName: fixed.loketName,
       service: fixed.service,
@@ -240,6 +242,8 @@ export default function DisplayPage() {
       number,
       isCalling,
       isServing,
+      waitingCount,
+      nextNumber,
     };
   });
 
@@ -329,7 +333,7 @@ export default function DisplayPage() {
               return (
                 <div
                   key={idx}
-                  className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col p-4 lg:p-5 relative overflow-hidden transition-all duration-500 ${
+                  className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden transition-all duration-500 ${
                     c.isCalling
                       ? "ring-2 ring-yellow-400 shadow-lg shadow-yellow-200/60 z-10"
                       : c.isServing
@@ -337,49 +341,63 @@ export default function DisplayPage() {
                         : ""
                   }`}
                 >
+                  {/* top accent bar */}
                   <div
                     className={`absolute top-0 left-0 w-full h-1.5 ${styles.borderColor.replace("border", "bg")}`}
                   />
-                  <div className="flex justify-between items-start mb-2 mt-1">
-                    <span className="font-bold text-lg lg:text-2xl text-slate-800 leading-tight">
+
+                  {/* header: loket name + icon */}
+                  <div className="flex justify-between items-center px-4 lg:px-5 pt-5 pb-2">
+                    <span className="font-bold text-base lg:text-xl text-slate-800 leading-tight truncate">
                       {c.label}
                     </span>
                     {styles.icon}
                   </div>
 
-                  <div className="flex-1 flex flex-col items-center justify-center py-1 lg:py-2">
-                    <span
-                      className={`text-[56px] lg:text-[88px] leading-none tracking-tight font-black transition-all duration-300 ${
-                        c.isCalling
-                          ? "text-[#FFC72C] animate-pulse drop-shadow-md"
-                          : c.isServing
-                            ? "text-emerald-600"
-                            : "text-slate-800"
-                      }`}
-                    >
-                      {c.number}
-                    </span>
-                  </div>
-
-                  <div className="mx-0.5 lg:mx-1 bg-slate-50/90 border border-slate-200/70 rounded-[14px] px-3 lg:px-4 py-2 flex justify-between items-center mt-2.5 min-h-[44px]">
-                    <span className="font-medium text-sm lg:text-[15px] text-slate-500 truncate mr-2 leading-tight">
-                      {c.loketName}
-                    </span>
-                    {c.isCalling ? (
-                      <span className="text-[10px] lg:text-[11px] font-bold px-2.5 lg:px-3 py-1.5 rounded-lg uppercase tracking-[0.08em] shrink-0 bg-yellow-400/20 text-yellow-700 animate-pulse">
-                        Memanggil
-                      </span>
-                    ) : c.isServing ? (
-                      <span className="text-[10px] lg:text-[11px] font-bold px-2.5 lg:px-3 py-1.5 rounded-lg uppercase tracking-[0.08em] shrink-0 bg-emerald-100 text-emerald-700">
-                        Dilayani
-                      </span>
-                    ) : (
+                  {/* split body */}
+                  <div className="flex flex-1 divide-x divide-slate-200 px-1 pb-4 lg:pb-5 mt-1 min-h-0">
+                    {/* left: sedang dilayani */}
+                    <div className="flex-1 flex flex-col items-center justify-center gap-1 px-2 lg:px-3 py-2">
                       <span
-                        className={`text-[10px] lg:text-[11px] font-bold px-2.5 lg:px-3 py-1.5 rounded-lg uppercase tracking-[0.08em] shrink-0 ${styles.labelBg}`}
+                        className={`text-[40px] lg:text-[64px] leading-none tracking-tight whitespace-nowrap tabular-nums font-black transition-all duration-300 ${
+                          c.isCalling
+                            ? "text-[#FFC72C] animate-pulse drop-shadow-md"
+                            : c.isServing
+                              ? "text-emerald-600"
+                              : "text-slate-300"
+                        }`}
                       >
-                        Menunggu
+                        {c.number}
                       </span>
-                    )}
+                      <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-widest text-slate-400">
+                        {c.isCalling ? "Memanggil" : "Sedang Dilayani"}
+                      </span>
+                    </div>
+
+                    {/* right: selanjutnya / menunggu */}
+                    {/* right: next number (top) + waiting count (bottom) */}
+                    <div className="flex-1 flex flex-col divide-y divide-slate-100 px-2 lg:px-3">
+                      {/* next number */}
+                      <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2">
+                        <span
+                          className={`text-lg lg:text-2xl leading-none tracking-tight font-black tabular-nums transition-all duration-300 ${c.nextNumber ? "text-emerald-500" : "text-slate-300"}`}
+                        >
+                          {c.nextNumber || "—"}
+                        </span>
+                        <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-widest text-slate-400">
+                          Selanjutnya
+                        </span>
+                      </div>
+                      {/* waiting count */}
+                      <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2">
+                        <span className="text-[38px] lg:text-[56px] leading-none tracking-tight font-black text-emerald-500 tabular-nums">
+                          {c.waitingCount}
+                        </span>
+                        <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-widest text-slate-400">
+                          Menunggu
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

@@ -40,9 +40,24 @@ export const createQueue = async (service: string, customerName?: string) => {
 export const getDisplayData = async () => {
   if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
     return {
-      "Loket Customer Service": { number: "CS-012", service: "CS" },
-      "Loket PLN Mobile Experience": { number: "PLN-005", service: "PLN" },
-      "Loket Customer Care": { number: "CC-002", service: "CC" },
+      "Loket Customer Service": {
+        number: "CS-012",
+        service: "CS",
+        waitingCount: 4,
+        nextNumber: "CS-013",
+      },
+      "Loket PLN Mobile Experience": {
+        number: "PLN-005",
+        service: "PLN",
+        waitingCount: 2,
+        nextNumber: "PLN-006",
+      },
+      "Loket Customer Care": {
+        number: "CC-002",
+        service: "CC",
+        waitingCount: 7,
+        nextNumber: "CC-003",
+      },
     };
   }
 

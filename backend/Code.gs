@@ -1089,11 +1089,36 @@ function handleHistoryToday(serviceFilter) {
 }
 
 function handleDisplay() {
-  var countersSheet =
-    SpreadsheetApp.getActiveSpreadsheet().getSheetByName("counters");
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var countersSheet = ss.getSheetByName("counters");
   if (!countersSheet) return jsonOut({});
 
   var sessionStart = getSessionStart();
+
+  // ── Count waiting queues per service ──────────────────────────
+  // ── Count waiting queues and find next number per service ──────────────────────────
+  var waitingByService = {};
+  var nextNumberByService = {};
+  var queuesSheet = ss.getSheetByName("queues");
+  if (queuesSheet) {
+    var qData = queuesSheet.getDataRange().getValues();
+    for (var q = 1; q < qData.length; q++) {
+      var qService = qData[q][Q_SERVICE];
+      var qStatus = qData[q][Q_STATUS];
+      var qCreatedAt = qData[q][Q_CREATED_AT];
+      // Use Q_CREATED_AT (actual datetime) for session comparison, same as handleListQueue
+      var qTime = qCreatedAt ? new Date(qCreatedAt) : null;
+      if (qStatus === "waiting" && qTime && qTime >= sessionStart) {
+        waitingByService[qService] = (waitingByService[qService] || 0) + 1;
+        // First waiting row = next to be called (sheet ordered by created_at ascending)
+        if (!nextNumberByService[qService]) {
+          nextNumberByService[qService] = qData[q][Q_NUMBER];
+        }
+      }
+    }
+  }
+
+  // ── Build display data per counter ────────────────────────────
   var data = countersSheet.getDataRange().getValues();
   var displayData = {};
 
@@ -1104,14 +1129,14 @@ function handleDisplay() {
     var lastAt = data[i][C_LAST_AT];
 
     if (name) {
-      // Only show the stored number if it was called within the current session.
-      // Outside the session window, reset the display to "--".
       var withinSession = lastAt && new Date(lastAt) >= sessionStart;
       displayData[name] = {
         number: withinSession ? lastNum || "--" : "--",
         service: service || "",
         called_at:
           withinSession && lastAt ? new Date(lastAt).toISOString() : "",
+        waitingCount: waitingByService[service] || 0,
+        nextNumber: nextNumberByService[service] || "",
       };
     }
   }
