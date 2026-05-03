@@ -1,5 +1,13 @@
-import { useState, useEffect, useRef } from "react";
-import { getDisplayData, getWaitingQueues, getConfig } from "../api";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getDisplayData,
+  getWaitingQueues,
+  getConfig,
+  getTodayHistoryQueues,
+  getLogs,
+  type LogRow,
+} from "../api";
 import {
   Zap,
   Ticket,
@@ -16,6 +24,7 @@ import {
   PlusCircle,
   Clock,
   BarChart2,
+  AlertTriangle,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────
@@ -40,10 +49,158 @@ type ActivityItem = {
   id: number;
   icon: React.ReactNode;
   iconBg: string;
+  progressLabel: string;
+  progressBadgeClass: string;
+  number: string;
+  serviceLabel: string;
+  actorLabel: string;
+  rawEvent: string;
   title: string;
   sub: string;
   time: Date;
+  message: string;
 };
+
+function parseDetailsJson(detailsJson: string): Record<string, any> {
+  if (!detailsJson) return {};
+  try {
+    const parsed = JSON.parse(detailsJson);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getServiceLabel(service: string): string {
+  if (service === "CS") return "Customer Service";
+  if (service === "PLN") return "PLN Mobile Experience";
+  if (service === "CC") return "Customer Care";
+  return service || "Layanan tidak diketahui";
+}
+
+function eventMeta(eventName: string) {
+  const event = (eventName || "").toLowerCase();
+  if (event === "create_queue") {
+    return {
+      label: "Diambil",
+      badgeClass: "bg-amber-100 text-amber-700 border-amber-200",
+    };
+  }
+  if (event === "call_queue") {
+    return {
+      label: "Dipanggil",
+      badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    };
+  }
+  if (event === "skip_queue") {
+    return {
+      label: "Dilewati",
+      badgeClass: "bg-slate-200 text-slate-700 border-slate-300",
+    };
+  }
+  if (event === "call_queue_failed") {
+    return {
+      label: "Gagal",
+      badgeClass: "bg-red-100 text-red-700 border-red-200",
+    };
+  }
+  return {
+    label: "Event",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+  };
+}
+
+function formatClockTime(date: Date): string {
+  return date.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function formatDateTime(value: any): string {
+  if (!value) return "-";
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return String(value);
+  return dt.toLocaleString("id-ID", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function csvCell(value: unknown): string {
+  const text = value == null ? "" : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function escapeHtml(value: unknown): string {
+  const text = value == null ? "" : String(value);
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function mapQueueLogToActivity(row: LogRow, idx: number): ActivityItem {
+  const details = parseDetailsJson(row.details_json || "");
+  const number = String(details.number || "").trim();
+  const service = String(details.service || "").trim();
+  const actor = String(row.actor || "").trim();
+  const event = String(row.event || "").toLowerCase();
+
+  let icon: React.ReactNode = <Clock size={18} />;
+  let iconBg = "bg-slate-200 text-slate-700";
+  let title = row.message || "Aktivitas antrean";
+  let sub = `Event: ${row.event || "-"}`;
+  const meta = eventMeta(event);
+
+  if (event === "create_queue") {
+    icon = <PlusCircle size={18} />;
+    iconBg = "bg-tertiary-fixed/30 text-[#723100]";
+    title = number ? `Tiket baru ${number}` : "Tiket baru dibuat";
+    sub = `Layanan: ${getServiceLabel(service)}`;
+  } else if (event === "call_queue") {
+    icon = <Megaphone size={18} />;
+    iconBg = "bg-secondary-container/20 text-secondary";
+    title = number ? `${number} dipanggil` : "Nomor antrean dipanggil";
+    sub = actor ? `Loket: ${actor}` : `Layanan: ${getServiceLabel(service)}`;
+  } else if (event === "skip_queue") {
+    icon = <Clock size={18} />;
+    iconBg = "bg-amber-100 text-amber-700";
+    title = number ? `${number} dilewati` : "Antrean dilewati";
+    sub = `Layanan: ${getServiceLabel(service)}`;
+  } else if (event === "call_queue_failed") {
+    icon = <Clock size={18} />;
+    iconBg = "bg-red-100 text-red-700";
+    title = "Panggilan antrean gagal";
+    sub = `Layanan: ${getServiceLabel(service)}`;
+  }
+
+  const parsedTime = new Date(row.timestamp);
+  const time = Number.isNaN(parsedTime.getTime()) ? new Date() : parsedTime;
+
+  return {
+    id: Date.now() + idx,
+    icon,
+    iconBg,
+    progressLabel: meta.label,
+    progressBadgeClass: meta.badgeClass,
+    number: number || "-",
+    serviceLabel: getServiceLabel(service),
+    actorLabel: actor || "-",
+    rawEvent: row.event || "-",
+    title,
+    sub,
+    time,
+    message: row.message || "-",
+  };
+}
 
 const SERVICES = [
   {
@@ -72,32 +229,22 @@ const SERVICES = [
   },
 ];
 
-// ─────────────────────────────────────────────
-// Chart bars — static distribution shape
-// ─────────────────────────────────────────────
-const CHART_HOURS = [
-  { label: "08:00", heightPct: 30, active: false },
-  { label: "09:00", heightPct: 45, active: false },
-  { label: "10:00", heightPct: 85, active: true },
-  { label: "11:00", heightPct: 95, active: true },
-  { label: "12:00", heightPct: 60, active: false },
-  { label: "13:00", heightPct: 70, active: false },
-  { label: "14:00", heightPct: 50, active: false },
-  { label: "15:00", heightPct: 40, active: false },
-  { label: "16:00", heightPct: 25, active: false },
-];
-
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [displayData, setDisplayData] = useState<Record<string, any>>({});
   const [waitingQueues, setWaitingQueues] = useState<any[]>([]);
+  const [todayHistory, setTodayHistory] = useState<any[]>([]);
   const [runningText, setRunningText] = useState(
     "Selamat datang di PLN ULP Salatiga. Silakan ambil nomor antrian dan tunggu panggilan.",
   );
   const [loading, setLoading] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const activityIdRef = useRef(1000);
-  const prevDisplayRef = useRef<Record<string, any>>({});
+  const [noticeModal, setNoticeModal] = useState<{
+    title: string;
+    message: string;
+    tone: "info" | "warning";
+  } | null>(null);
 
   // ── Initial config load (once)
   useEffect(() => {
@@ -112,63 +259,26 @@ export default function DashboardPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [display, queues] = await Promise.all([
+      const [display, queues, history, queueLogs] = await Promise.all([
         getDisplayData(),
         getWaitingQueues(),
+        getTodayHistoryQueues(),
+        getLogs({ limit: 30, module: "queue" }),
       ]);
 
-      // Detect new calls → add to activity feed
-      for (const svc of SERVICES) {
-        const curr = display[svc.key]?.number;
-        const prev = prevDisplayRef.current[svc.key]?.number;
-        if (curr && curr !== "--" && curr !== prev) {
-          const id = ++activityIdRef.current;
-          setActivity((old) => [
-            {
-              id,
-              icon: <Megaphone size={18} />,
-              iconBg: "bg-secondary-container/20 text-secondary",
-              title: `${curr} dipanggil`,
-              sub: `Diarahkan ke ${svc.key}`,
-              time: new Date(),
-            },
-            ...old.slice(0, 19),
-          ]);
-        }
+      if (Array.isArray(queueLogs)) {
+        setActivity(
+          queueLogs
+            .slice(0, 20)
+            .map((row, idx) => mapQueueLogToActivity(row, idx)),
+        );
+      } else {
+        setActivity([]);
       }
 
-      // Detect new waiting tickets (queue length increased)
-      if (
-        Array.isArray(queues) &&
-        queues.length > waitingQueues.length &&
-        waitingQueues.length > 0
-      ) {
-        const newTickets = queues.slice(waitingQueues.length);
-        for (const t of newTickets) {
-          const id = ++activityIdRef.current;
-          setActivity((old) => [
-            {
-              id,
-              icon: <PlusCircle size={18} />,
-              iconBg: "bg-tertiary-fixed/30 text-[#723100]",
-              title: `Tiket baru ${t.number}`,
-              sub: `Layanan: ${
-                t.service === "CS"
-                  ? "Customer Service"
-                  : t.service === "PLN"
-                    ? "PLN Mobile Experience"
-                    : "Customer Care"
-              }`,
-              time: new Date(),
-            },
-            ...old.slice(0, 19),
-          ]);
-        }
-      }
-
-      prevDisplayRef.current = display;
       setDisplayData(display);
       setWaitingQueues(Array.isArray(queues) ? queues : []);
+      setTodayHistory(Array.isArray(history) ? history : []);
       setLastRefreshed(new Date());
     } catch {
       // silent
@@ -206,12 +316,334 @@ export default function DashboardPage() {
     "Loket Customer Care": ccWaiting,
   };
 
+  const avgServiceMinutes = (() => {
+    const calledRows = todayHistory.filter(
+      (row) => row?.status === "called" && row?.created_at && row?.called_at,
+    );
+    if (calledRows.length === 0) return null;
+
+    let totalMinutes = 0;
+    let validRows = 0;
+
+    for (const row of calledRows) {
+      const createdAt = new Date(row.created_at).getTime();
+      const calledAt = new Date(row.called_at).getTime();
+      if (!Number.isFinite(createdAt) || !Number.isFinite(calledAt)) continue;
+
+      const diffMs = calledAt - createdAt;
+      if (diffMs < 0) continue;
+
+      totalMinutes += diffMs / 60000;
+      validRows += 1;
+    }
+
+    if (validRows === 0) return null;
+    return Math.round(totalMinutes / validRows);
+  })();
+
+  const avgServiceLabel = (() => {
+    if (avgServiceMinutes === null) return "-";
+    if (avgServiceMinutes < 60) return `~${avgServiceMinutes}m`;
+
+    const hours = Math.floor(avgServiceMinutes / 60);
+    const minutes = avgServiceMinutes % 60;
+    if (minutes === 0) return `~${hours}j`;
+    return `~${hours}j ${minutes}m`;
+  })();
+
+  const chartHours = (() => {
+    const startHour = 7;
+    const endHour = 16;
+
+    const counts = Array.from({ length: endHour - startHour + 1 }, () => 0);
+    for (const row of todayHistory) {
+      const raw = row?.created_at || row?.date;
+      if (!raw) continue;
+      const dt = new Date(raw);
+      const hour = dt.getHours();
+      if (Number.isNaN(dt.getTime())) continue;
+      if (hour < startHour || hour > endHour) continue;
+      counts[hour - startHour] += 1;
+    }
+
+    return counts.map((count, idx) => {
+      const hour = startHour + idx;
+      return {
+        hour,
+        label: `${String(hour).padStart(2, "0")}:00`,
+        count,
+      };
+    });
+  })();
+
+  const maxHourlyCount = Math.max(1, ...chartHours.map((h) => h.count));
+  const yAxisTop = maxHourlyCount;
+  const yAxisMid = Math.ceil(maxHourlyCount / 2);
+
+  const peakHourInfo = (() => {
+    const maxCount = Math.max(...chartHours.map((h) => h.count));
+    if (maxCount <= 0) return "Belum ada puncak antrean";
+
+    const peakHours = chartHours
+      .filter((h) => h.count === maxCount)
+      .map((h) => h.label);
+
+    if (peakHours.length === 1) {
+      return `Puncak: ${peakHours[0]} (${maxCount} antrean)`;
+    }
+
+    return `Puncak: ${peakHours.join(", ")} (${maxCount} antrean/jam)`;
+  })();
+
+  const handleDownloadCsv = () => {
+    if (todayHistory.length === 0) {
+      setNoticeModal({
+        title: "Data Belum Tersedia",
+        message: "Belum ada data antrean hari ini untuk diunduh.",
+        tone: "info",
+      });
+      return;
+    }
+
+    const header = [
+      "No",
+      "Nomor Antrean",
+      "Layanan",
+      "Status",
+      "Nama Pelanggan",
+      "Loket",
+      "Waktu Dibuat",
+      "Waktu Dipanggil",
+      "Durasi Tunggu (menit)",
+    ];
+
+    const rows = todayHistory.map((row, idx) => {
+      const createdAt = row?.created_at ? new Date(row.created_at) : null;
+      const calledAt = row?.called_at ? new Date(row.called_at) : null;
+
+      const waitMinutes =
+        createdAt &&
+        calledAt &&
+        !Number.isNaN(createdAt.getTime()) &&
+        !Number.isNaN(calledAt.getTime()) &&
+        calledAt.getTime() >= createdAt.getTime()
+          ? ((calledAt.getTime() - createdAt.getTime()) / 60000).toFixed(1)
+          : "";
+
+      return [
+        idx + 1,
+        row?.number || "-",
+        getServiceLabel(row?.service || ""),
+        row?.status || "-",
+        row?.customer_name || "-",
+        row?.counter || "-",
+        formatDateTime(row?.created_at),
+        formatDateTime(row?.called_at),
+        waitMinutes,
+      ];
+    });
+
+    const csv = [header, ...rows]
+      .map((line) => line.map(csvCell).join(","))
+      .join("\r\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateToken = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `antrean-hari-ini-${dateToken}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleOpenFullReport = () => {
+    const reportWindow = window.open("", "_blank", "noopener,noreferrer");
+    if (!reportWindow) {
+      setNoticeModal({
+        title: "Popup Diblokir",
+        message:
+          "Browser memblokir popup laporan. Aktifkan popup untuk situs ini agar laporan dapat dibuka di tab baru.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    const dateLabel = new Date().toLocaleDateString("id-ID", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const rowsHtml = todayHistory
+      .map((row, idx) => {
+        const createdAt = row?.created_at ? new Date(row.created_at) : null;
+        const calledAt = row?.called_at ? new Date(row.called_at) : null;
+        const waitMinutes =
+          createdAt &&
+          calledAt &&
+          !Number.isNaN(createdAt.getTime()) &&
+          !Number.isNaN(calledAt.getTime()) &&
+          calledAt.getTime() >= createdAt.getTime()
+            ? ((calledAt.getTime() - createdAt.getTime()) / 60000).toFixed(1)
+            : "-";
+
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${escapeHtml(row?.number || "-")}</td>
+            <td>${escapeHtml(getServiceLabel(row?.service || ""))}</td>
+            <td>${escapeHtml(row?.status || "-")}</td>
+            <td>${escapeHtml(row?.customer_name || "-")}</td>
+            <td>${escapeHtml(row?.counter || "-")}</td>
+            <td>${escapeHtml(formatDateTime(row?.created_at))}</td>
+            <td>${escapeHtml(formatDateTime(row?.called_at))}</td>
+            <td>${escapeHtml(waitMinutes)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const chartRowsHtml = chartHours
+      .map(
+        (h) =>
+          `<tr><td>${escapeHtml(h.label)}</td><td>${escapeHtml(h.count)}</td></tr>`,
+      )
+      .join("");
+
+    reportWindow.document.open();
+    reportWindow.document.write(`
+      <!doctype html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Laporan Antrean Hari Ini</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+          h1 { margin: 0 0 8px; font-size: 24px; }
+          p { margin: 0 0 4px; }
+          .meta { margin-bottom: 16px; color: #4b5563; }
+          .actions { margin-bottom: 16px; }
+          .actions button {
+            background: #002e5b; color: white; border: none; border-radius: 8px;
+            padding: 8px 12px; cursor: pointer; font-size: 12px;
+          }
+          .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+          .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #f8fafc; }
+          .card .k { font-size: 11px; color: #6b7280; text-transform: uppercase; }
+          .card .v { font-size: 20px; font-weight: bold; margin-top: 4px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+          th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; vertical-align: top; }
+          th { background: #f1f5f9; }
+          .section-title { margin-top: 20px; font-size: 16px; font-weight: bold; }
+          @media print {
+            .actions { display: none; }
+            body { margin: 12px; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Laporan Penuh Antrean Hari Ini</h1>
+        <div class="meta">
+          <p><strong>Tanggal:</strong> ${escapeHtml(dateLabel)}</p>
+          <p><strong>Rentang Operasional:</strong> 07:00 - 16:00 WIB</p>
+          <p><strong>Puncak:</strong> ${escapeHtml(peakHourInfo)}</p>
+        </div>
+
+        <div class="actions">
+          <button onclick="window.print()">Cetak / Simpan PDF</button>
+        </div>
+
+        <div class="grid">
+          <div class="card"><div class="k">Total Tiket</div><div class="v">${totalTickets}</div></div>
+          <div class="card"><div class="k">Dilayani</div><div class="v">${servedCount}</div></div>
+          <div class="card"><div class="k">Menunggu</div><div class="v">${waitingCount}</div></div>
+          <div class="card"><div class="k">Rata-rata Layanan</div><div class="v">${escapeHtml(avgServiceLabel)}</div></div>
+        </div>
+
+        <div class="section-title">Distribusi Antrean Per Jam</div>
+        <table>
+          <thead>
+            <tr><th>Jam</th><th>Jumlah Antrean</th></tr>
+          </thead>
+          <tbody>
+            ${chartRowsHtml}
+          </tbody>
+        </table>
+
+        <div class="section-title">Detail Antrean Hari Ini</div>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nomor</th>
+              <th>Layanan</th>
+              <th>Status</th>
+              <th>Nama Pelanggan</th>
+              <th>Loket</th>
+              <th>Waktu Dibuat</th>
+              <th>Waktu Dipanggil</th>
+              <th>Durasi Tunggu (menit)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="9">Belum ada data antrean hari ini.</td></tr>'}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+    reportWindow.document.close();
+  };
+
   return (
     <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] min-h-screen flex flex-col">
+      {noticeModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center px-4">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+            <div className="relative p-5 sm:p-6 bg-gradient-to-br from-slate-50 via-white to-blue-50 border-b border-slate-200">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                    noticeModal.tone === "warning"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  <AlertTriangle size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {noticeModal.title}
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {noticeModal.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 sm:p-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setNoticeModal(null)}
+                className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Header (Queue Control Style) ───────────────────── */}
       <header className="mx-4 mt-4 sm:mx-safe-margin sm:mt-safe-margin flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-3 min-w-0">
-          <Zap size={24} className="text-primary shrink-0" />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
               Dashboard
@@ -291,7 +723,7 @@ export default function DashboardPage() {
                 Rata-rata Layanan
               </p>
               <h3 className="text-heading-lg font-bold text-surface-tint">
-                ~12m
+                {avgServiceLabel}
               </h3>
             </div>
           </div>
@@ -364,65 +796,79 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <button className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-slate-200 text-outline hover:bg-slate-50 transition-colors">
+                  <button
+                    onClick={handleDownloadCsv}
+                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-slate-200 text-outline hover:bg-slate-50 transition-colors"
+                  >
                     Download CSV
                   </button>
-                  <button className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-primary-container text-white hover:bg-primary transition-colors">
+                  <button
+                    onClick={handleOpenFullReport}
+                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-primary-container text-white hover:bg-primary transition-colors"
+                  >
                     Laporan Penuh
                   </button>
                 </div>
               </div>
 
-              <div className="relative h-48 sm:h-64 w-full flex items-end justify-between px-1 sm:px-md gap-0.5 sm:gap-1">
-                {CHART_HOURS.map((bar) => {
-                  const now = new Date().getHours();
-                  const barHour = parseInt(bar.label.split(":")[0], 10);
-                  const isCurrentHour = barHour === now;
+              <div className="relative h-48 sm:h-64 w-full flex gap-2 sm:gap-3">
+                <div className="w-8 h-full flex flex-col justify-between text-[10px] text-slate-400 font-semibold pt-1 pb-5">
+                  <span>{yAxisTop}</span>
+                  <span>{yAxisMid}</span>
+                  <span>0</span>
+                </div>
 
-                  // If we have real data, scale based on known total
-                  const realBars = waitingCount > 0;
-                  const heightPct =
-                    isCurrentHour && realBars
-                      ? Math.max(20, Math.min(100, waitingCount * 5))
-                      : bar.heightPct;
+                <div className="relative flex-1 h-full border-l border-slate-200 border-b border-slate-200 px-1 sm:px-md pb-5 pt-1">
+                  <div className="absolute left-0 right-0 top-[10%] border-t border-dashed border-slate-200" />
+                  <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-slate-200" />
 
-                  return (
-                    <div
-                      key={bar.label}
-                      className="flex-1 flex flex-col items-center gap-1 group"
-                    >
-                      <div
-                        className={`w-full rounded-t-lg relative transition-all duration-300 ${
-                          isCurrentHour
-                            ? "bg-primary-container"
-                            : bar.active
-                              ? "bg-secondary-container"
-                              : "bg-surface-container-highest hover:bg-secondary-container"
-                        }`}
-                        style={{ height: `${heightPct}%` }}
-                      >
-                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[9px] font-bold text-outline whitespace-nowrap transition-opacity">
-                          {bar.label}
+                  <div className="h-full w-full flex items-end justify-between gap-0.5 sm:gap-1">
+                    {chartHours.map((bar) => {
+                      const now = new Date().getHours();
+                      const isCurrentHour = bar.hour === now;
+                      const heightPct = Math.round(
+                        (bar.count / maxHourlyCount) * 100,
+                      );
+
+                      return (
+                        <div
+                          key={bar.label}
+                          className="flex-1 flex flex-col items-center gap-1 group"
+                        >
+                          <div
+                            className={`w-full rounded-t-lg relative transition-all duration-300 ${
+                              isCurrentHour
+                                ? "bg-primary-container"
+                                : bar.count > 0
+                                  ? "bg-secondary-container"
+                                  : "bg-surface-container-highest hover:bg-secondary-container"
+                            }`}
+                            style={{ height: `${Math.max(4, heightPct)}%` }}
+                          >
+                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 text-[9px] font-bold text-outline whitespace-nowrap transition-opacity">
+                              {bar.label} ({bar.count})
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[8px] sm:text-[9px] font-medium transition-colors ${
+                              isCurrentHour
+                                ? "text-primary font-bold"
+                                : "text-outline"
+                            }`}
+                          >
+                            {bar.label.replace(":00", "")}
+                          </span>
                         </div>
-                      </div>
-                      <span
-                        className={`hidden sm:block text-[9px] font-medium transition-colors ${
-                          isCurrentHour
-                            ? "text-primary font-bold"
-                            : "text-outline"
-                        }`}
-                      >
-                        {bar.label.replace(":00", "")}
-                      </span>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               <div className="mt-4 border-t border-slate-200 pt-4 flex items-center justify-between text-[10px] text-outline font-bold uppercase tracking-widest">
-                <span>08:00</span>
-                <span>Puncak: 10:00 – 11:30</span>
-                <span>17:00</span>
+                <span>07:00 WIB</span>
+                <span>{peakHourInfo}</span>
+                <span>16:00 WIB</span>
               </div>
             </div>
           </div>
@@ -461,10 +907,33 @@ export default function DashboardPage() {
                         <p className="text-sm font-bold text-on-surface">
                           {item.title}
                         </p>
-                        <p className="text-xs text-on-surface-variant truncate">
+                        <p className="text-xs text-on-surface-variant">
                           {item.sub}
                         </p>
+
+                        <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wide ${item.progressBadgeClass}`}
+                          >
+                            {item.progressLabel}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full border border-slate-200 bg-white text-[10px] font-semibold text-slate-700">
+                            {item.number}
+                          </span>
+                          <span className="text-[10px] text-slate-600">
+                            {item.serviceLabel}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 text-[10px] text-slate-500">
+                          Loket/Aktor: {item.actorLabel} · Event:{" "}
+                          {item.rawEvent}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">
+                          {item.message}
+                        </p>
                         <span className="text-[10px] text-outline">
+                          {formatClockTime(item.time)} ·{" "}
                           {relativeTime(item.time)}
                         </span>
                       </div>
@@ -474,7 +943,10 @@ export default function DashboardPage() {
               </div>
 
               <div className="p-md border-t border-slate-200 text-center">
-                <button className="text-[10px] font-bold text-primary-container uppercase tracking-widest hover:underline">
+                <button
+                  onClick={() => navigate("/admin/logs?module=queue")}
+                  className="text-[10px] font-bold text-primary-container uppercase tracking-widest hover:underline"
+                >
                   Lihat Log Lengkap
                 </button>
               </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Menu,
@@ -10,6 +10,8 @@ import {
   TrendingUp,
   RefreshCw,
   Search,
+  ChevronLeft,
+  ChevronRight,
   ArrowUpDown,
   Filter,
   LayoutDashboard,
@@ -55,6 +57,13 @@ const SAT_LABEL_COLOR: Record<SatisfactionOption, string> = {
   "Tidak Puas": "text-rose-700",
 };
 
+const MOBILE_DOT_FLASH_MS = 280;
+const MOBILE_EDGE_PULSE_MS = 280;
+const MOBILE_LIST_EXIT_MS = 180;
+const MOBILE_LIST_ENTER_MS = 320;
+const MOBILE_LIST_EXIT_EASING = "cubic-bezier(0.4, 0, 1, 1)";
+const MOBILE_LIST_ENTER_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
 function fmtDate(dateStr: string) {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
@@ -64,6 +73,13 @@ function fmtDate(dateStr: string) {
     month: "short",
     year: "numeric",
   });
+}
+
+function toYmdLocal(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export default function SurveyRecapDashboardPage() {
@@ -88,6 +104,32 @@ export default function SurveyRecapDashboardPage() {
     | "sat_desc"
     | "sat_asc"
   >("date_desc");
+  const [mobilePage, setMobilePage] = useState(1);
+  const [mobileMotionTick, setMobileMotionTick] = useState(0);
+  const [isTrendChartVisible, setIsTrendChartVisible] = useState(false);
+  const [isMobileListVisible, setIsMobileListVisible] = useState(false);
+  const [mobileListPhase, setMobileListPhase] = useState<
+    "idle" | "exiting" | "entering"
+  >("idle");
+  const [mobileDragOffset, setMobileDragOffset] = useState(0);
+  const [isActiveDotFlashing, setIsActiveDotFlashing] = useState(false);
+  const [mobileSlideDirection, setMobileSlideDirection] = useState<
+    "left" | "right" | null
+  >(null);
+  const [showLeftEdgeHint, setShowLeftEdgeHint] = useState(false);
+  const [showRightEdgeHint, setShowRightEdgeHint] = useState(false);
+  const [edgePulseSide, setEdgePulseSide] = useState<"left" | "right" | null>(
+    null,
+  );
+  const [mobileRenderedRows, setMobileRenderedRows] = useState<SurveyItem[]>(
+    [],
+  );
+  const swipeStartXRef = useRef<number | null>(null);
+  const swipeStartYRef = useRef<number | null>(null);
+  const swipeAxisLockRef = useRef<"x" | "y" | null>(null);
+  const previousMobilePageRef = useRef(1);
+  const hasInitializedMobileListRef = useRef(false);
+  const edgePulseTimeoutRef = useRef<number | null>(null);
 
   const navGroups = [
     {
@@ -141,6 +183,7 @@ export default function SurveyRecapDashboardPage() {
       if (Array.isArray(data)) {
         setSurveys(data as SurveyItem[]);
         setLastUpdated(new Date());
+        setMobileMotionTick((tick) => tick + 1);
       }
     } catch {
       setSurveys([]);
@@ -174,6 +217,10 @@ export default function SurveyRecapDashboardPage() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    setMobilePage(1);
+  }, [tableQuery, tableFilterSat, tableSort]);
+
   const stats = useMemo(() => {
     const total = surveys.length;
     const bySatisfaction: Record<SatisfactionOption, number> = {
@@ -202,12 +249,35 @@ export default function SurveyRecapDashboardPage() {
     const avgScore = total > 0 ? scoreSum / total : 0;
     const index = total > 0 ? Math.round((avgScore / 4) * 100) : 0;
 
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    const todayKey = toYmdLocal(today);
     const todayCount = byDate[todayKey] || 0;
 
-    const trend = Object.entries(byDate)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-7);
+    const trend = Array.from({ length: 7 }, (_, idx) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (6 - idx));
+      const key = toYmdLocal(d);
+      return {
+        key,
+        dayLabel: d.toLocaleDateString("id-ID", { weekday: "short" }),
+        dateLabel: d.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
+        count: byDate[key] || 0,
+      };
+    });
+
+    const trendTotal = trend.reduce((sum, t) => sum + t.count, 0);
+    const trendAverage = Math.round((trendTotal / trend.length) * 10) / 10;
+    const peakCount = Math.max(0, ...trend.map((t) => t.count));
+    const peakDays = trend.filter(
+      (t) => t.count === peakCount && peakCount > 0,
+    );
+    const peakLabel =
+      peakDays.length > 0
+        ? peakDays.map((d) => `${d.dayLabel} (${d.dateLabel})`).join(", ")
+        : "-";
 
     return {
       total,
@@ -217,8 +287,61 @@ export default function SurveyRecapDashboardPage() {
       withFeedback,
       todayCount,
       trend,
+      trendTotal,
+      trendAverage,
+      peakCount,
+      peakLabel,
     };
   }, [surveys]);
+
+  const quickInsight = useMemo(() => {
+    if (stats.total === 0) {
+      return {
+        headline: "Belum ada data survey.",
+        detail:
+          "Arahkan pelanggan untuk mengisi survey agar insight layanan dapat terbentuk.",
+      };
+    }
+
+    const dominant = SAT_ORDER.reduce(
+      (best, k) =>
+        stats.bySatisfaction[k] > stats.bySatisfaction[best] ? k : best,
+      SAT_ORDER[0],
+    );
+    const dominantCount = stats.bySatisfaction[dominant];
+    const dominantPct = Math.round((dominantCount / stats.total) * 100);
+
+    const negativeCount =
+      stats.bySatisfaction["Kurang Puas"] + stats.bySatisfaction["Tidak Puas"];
+    const negativePct = Math.round((negativeCount / stats.total) * 100);
+
+    const first3 = stats.trend
+      .slice(0, 3)
+      .reduce((sum, item) => sum + item.count, 0);
+    const last3 = stats.trend
+      .slice(-3)
+      .reduce((sum, item) => sum + item.count, 0);
+    const trendDelta = last3 - first3;
+
+    const feedbackRate = Math.round((stats.withFeedback / stats.total) * 100);
+
+    const dominantText = `Respon didominasi ${dominant} (${dominantPct}%).`;
+    const qualityText =
+      negativeCount === 0
+        ? "Belum ada respon negatif dalam periode ini."
+        : `Respon negatif tercatat ${negativePct}%.`;
+    const trendText =
+      trendDelta > 0
+        ? `Volume respon 3 hari terakhir naik (+${trendDelta}) dibanding 3 hari sebelumnya.`
+        : trendDelta < 0
+          ? `Volume respon 3 hari terakhir turun (${trendDelta}) dibanding 3 hari sebelumnya.`
+          : "Volume respon 3 hari terakhir stabil dibanding 3 hari sebelumnya.";
+
+    return {
+      headline: dominantText,
+      detail: `${qualityText} ${trendText} Feedback tertulis masuk ${feedbackRate}%.`,
+    };
+  }, [stats]);
 
   const tableRows = useMemo(() => {
     const q = tableQuery.trim().toLowerCase();
@@ -256,8 +379,265 @@ export default function SurveyRecapDashboardPage() {
     });
   }, [surveys, tableFilterSat, tableQuery, tableSort]);
 
-  const maxSatCount = Math.max(1, ...Object.values(stats.bySatisfaction));
-  const maxTrendCount = Math.max(1, ...stats.trend.map(([, v]) => v));
+  const donutRadius = 70;
+  const donutStroke = 20;
+  const donutCircumference = 2 * Math.PI * donutRadius;
+  const donutSegments = useMemo(() => {
+    let acc = 0;
+    return SAT_ORDER.map((k) => {
+      const count = stats.bySatisfaction[k];
+      const fraction = stats.total > 0 ? count / stats.total : 0;
+      const length = fraction * donutCircumference;
+      const segment = {
+        key: k,
+        count,
+        fraction,
+        dasharray: `${length} ${donutCircumference - length}`,
+        dashoffset: -acc,
+      };
+      acc += length;
+      return segment;
+    });
+  }, [stats.bySatisfaction, stats.total, donutCircumference]);
+
+  const maxTrendCount = Math.max(1, ...stats.trend.map((t) => t.count));
+  const trendAxisMid = Math.ceil(maxTrendCount / 2);
+  const mobilePageSize = 6;
+  const mobilePageCount = Math.max(
+    1,
+    Math.ceil(tableRows.length / mobilePageSize),
+  );
+  const mobileCardRows = useMemo(() => {
+    const start = (mobilePage - 1) * mobilePageSize;
+    return tableRows.slice(start, start + mobilePageSize);
+  }, [mobilePage, tableRows]);
+  const mobileTrendChart = useMemo(() => {
+    if (stats.trend.length === 0) return null;
+
+    const width = 320;
+    const height = 96;
+    const paddingX = 10;
+    const paddingTop = 10;
+    const baselineY = height - 12;
+    const usableHeight = baselineY - paddingTop;
+    const step =
+      stats.trend.length > 1
+        ? (width - paddingX * 2) / (stats.trend.length - 1)
+        : 0;
+
+    const points = stats.trend.map((point, index) => {
+      const x = stats.trend.length === 1 ? width / 2 : paddingX + step * index;
+      const ratio = point.count / maxTrendCount;
+      const y = baselineY - ratio * usableHeight;
+      return {
+        ...point,
+        x,
+        y,
+      };
+    });
+
+    const linePath = points
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+      .join(" ");
+    const areaPath = `${linePath} L ${points[points.length - 1].x} ${baselineY} L ${points[0].x} ${baselineY} Z`;
+    const lineSegments = points.slice(1).map((point, index) => ({
+      key: `${points[index].key}-${point.key}`,
+      x1: points[index].x,
+      y1: points[index].y,
+      x2: point.x,
+      y2: point.y,
+      delay: index * 110,
+    }));
+
+    return {
+      baselineY,
+      points,
+      linePath,
+      areaPath,
+      lineSegments,
+    };
+  }, [maxTrendCount, stats.trend]);
+
+  useEffect(() => {
+    setMobilePage((page) => Math.min(page, mobilePageCount));
+  }, [mobilePageCount]);
+
+  useEffect(() => {
+    setIsTrendChartVisible(false);
+    const frame = requestAnimationFrame(() => {
+      setIsTrendChartVisible(true);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [mobileMotionTick, stats.trend]);
+
+  useEffect(() => {
+    const previousPage = previousMobilePageRef.current;
+    if (mobilePage > previousPage) {
+      setMobileSlideDirection("left");
+    } else if (mobilePage < previousPage) {
+      setMobileSlideDirection("right");
+    }
+
+    previousMobilePageRef.current = mobilePage;
+  }, [mobilePage]);
+
+  useEffect(() => {
+    if (!hasInitializedMobileListRef.current) {
+      hasInitializedMobileListRef.current = true;
+      setMobileRenderedRows(mobileCardRows);
+      setMobileListPhase("entering");
+      const frame = requestAnimationFrame(() => {
+        setIsMobileListVisible(true);
+      });
+      const settleTimer = window.setTimeout(() => {
+        setMobileListPhase("idle");
+      }, MOBILE_LIST_ENTER_MS);
+
+      return () => {
+        cancelAnimationFrame(frame);
+        window.clearTimeout(settleTimer);
+      };
+    }
+
+    setMobileListPhase("exiting");
+    setIsMobileListVisible(false);
+
+    const swapTimer = window.setTimeout(() => {
+      setMobileRenderedRows(mobileCardRows);
+      setMobileListPhase("entering");
+      requestAnimationFrame(() => {
+        setIsMobileListVisible(true);
+      });
+    }, MOBILE_LIST_EXIT_MS);
+
+    const settleTimer = window.setTimeout(() => {
+      setMobileListPhase("idle");
+      setMobileSlideDirection(null);
+    }, MOBILE_LIST_EXIT_MS + MOBILE_LIST_ENTER_MS);
+
+    return () => {
+      window.clearTimeout(swapTimer);
+      window.clearTimeout(settleTimer);
+    };
+  }, [mobileCardRows]);
+
+  useEffect(() => {
+    if (mobilePageCount <= 1) return;
+
+    setIsActiveDotFlashing(true);
+    const timeout = window.setTimeout(() => {
+      setIsActiveDotFlashing(false);
+    }, MOBILE_DOT_FLASH_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [mobilePage, mobilePageCount]);
+
+  useEffect(() => {
+    return () => {
+      if (edgePulseTimeoutRef.current !== null) {
+        window.clearTimeout(edgePulseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const triggerEdgePulse = (side: "left" | "right") => {
+    setEdgePulseSide(side);
+    if (edgePulseTimeoutRef.current !== null) {
+      window.clearTimeout(edgePulseTimeoutRef.current);
+    }
+    edgePulseTimeoutRef.current = window.setTimeout(() => {
+      setEdgePulseSide(null);
+    }, MOBILE_EDGE_PULSE_MS);
+  };
+
+  const resetSwipeState = () => {
+    swipeStartXRef.current = null;
+    swipeStartYRef.current = null;
+    swipeAxisLockRef.current = null;
+    setMobileDragOffset(0);
+    setShowLeftEdgeHint(false);
+    setShowRightEdgeHint(false);
+  };
+
+  const handleMobileCardsTouchStart = (clientX: number, clientY: number) => {
+    swipeStartXRef.current = clientX;
+    swipeStartYRef.current = clientY;
+    swipeAxisLockRef.current = null;
+    setMobileDragOffset(0);
+  };
+
+  const handleMobileCardsTouchMove = (clientX: number, clientY: number) => {
+    if (swipeStartXRef.current === null || swipeStartYRef.current === null) {
+      return;
+    }
+
+    const deltaY = clientY - swipeStartYRef.current;
+    const deltaX = clientX - swipeStartXRef.current;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (swipeAxisLockRef.current === null) {
+      const activationThreshold = 10;
+      if (absX < activationThreshold && absY < activationThreshold) return;
+
+      swipeAxisLockRef.current = absX > absY * 1.15 ? "x" : "y";
+    }
+
+    if (swipeAxisLockRef.current !== "x") {
+      setMobileDragOffset(0);
+      return;
+    }
+
+    const isPullingPastFirstPage = mobilePage === 1 && deltaX > 0;
+    const isPullingPastLastPage = mobilePage === mobilePageCount && deltaX < 0;
+
+    if (isPullingPastFirstPage && !showLeftEdgeHint) {
+      triggerEdgePulse("left");
+    }
+    if (isPullingPastLastPage && !showRightEdgeHint) {
+      triggerEdgePulse("right");
+    }
+
+    setShowLeftEdgeHint(isPullingPastFirstPage);
+    setShowRightEdgeHint(isPullingPastLastPage);
+
+    if (isPullingPastFirstPage || isPullingPastLastPage) {
+      const rubberBandOffset =
+        Math.sign(deltaX) * Math.min(28, Math.sqrt(Math.abs(deltaX)) * 3.2);
+      setMobileDragOffset(rubberBandOffset);
+      return;
+    }
+
+    const clampedOffset = Math.max(-48, Math.min(48, deltaX * 0.78));
+    setMobileDragOffset(clampedOffset);
+  };
+
+  const handleMobileCardsTouchEnd = (clientX: number) => {
+    if (
+      swipeStartXRef.current === null ||
+      swipeAxisLockRef.current !== "x" ||
+      mobilePageCount <= 1
+    ) {
+      resetSwipeState();
+      return;
+    }
+
+    const deltaX = clientX - swipeStartXRef.current;
+    const swipeThreshold = 48;
+
+    if (deltaX <= -swipeThreshold) {
+      setMobilePage((page) => Math.min(mobilePageCount, page + 1));
+    } else if (deltaX >= swipeThreshold) {
+      setMobilePage((page) => Math.max(1, page - 1));
+    }
+
+    resetSwipeState();
+  };
+
+  const handleMobileCardsTouchCancel = () => {
+    resetSwipeState();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] flex flex-col font-['Inter']">
@@ -367,27 +747,27 @@ export default function SurveyRecapDashboardPage() {
         </div>
       </nav>
 
-      <main className="w-full sm:w-[calc(100%-280px)] sm:ml-[280px] px-4 sm:px-safe-margin flex-1 flex flex-col pt-5 sm:pt-7 gap-4 pb-8">
+      <main className="w-full sm:w-[calc(100%-280px)] sm:ml-[280px] px-3 sm:px-safe-margin flex-1 flex flex-col pt-4 sm:pt-7 gap-4 pb-6 sm:pb-8">
         <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start sm:items-center gap-3">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="sm:hidden p-2 rounded-full hover:bg-slate-100 transition-colors"
+              className="sm:hidden p-2 rounded-full hover:bg-slate-100 transition-colors shrink-0 mt-0.5"
               aria-label="Buka menu"
             >
               <Menu size={22} />
             </button>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#191c21] tracking-tight">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-3xl font-bold text-[#191c21] tracking-tight leading-tight">
                 Dashboard Survey
               </h1>
-              <p className="text-sm sm:text-base text-slate-500 mt-1">
+              <p className="text-sm sm:text-base text-slate-500 mt-1 leading-relaxed">
                 Rekap kepuasan pelanggan secara real-time.
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-between sm:justify-end gap-3">
-            <div className="text-xs sm:text-sm text-slate-500 text-right">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <div className="text-[11px] sm:text-sm text-slate-500 sm:text-right leading-relaxed">
               Update terakhir: {lastUpdated.toLocaleTimeString("id-ID")}
               {isLoading ? " (memuat...)" : ""}
             </div>
@@ -395,7 +775,7 @@ export default function SurveyRecapDashboardPage() {
               type="button"
               onClick={() => void fetchSurveys(true)}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-container disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary-container disabled:opacity-60 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
             >
               <RefreshCw
                 size={15}
@@ -406,12 +786,12 @@ export default function SurveyRecapDashboardPage() {
           </div>
         </header>
 
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           <div className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 p-4 shadow-sm">
             <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">
               Total Respon
             </p>
-            <p className="mt-1 text-2xl font-extrabold text-primary">
+            <p className="mt-1 text-xl sm:text-2xl font-extrabold text-primary leading-tight">
               {stats.total}
             </p>
           </div>
@@ -419,7 +799,7 @@ export default function SurveyRecapDashboardPage() {
             <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">
               Index Kepuasan
             </p>
-            <p className="mt-1 text-2xl font-extrabold text-primary">
+            <p className="mt-1 text-xl sm:text-2xl font-extrabold text-primary leading-tight">
               {stats.index}%
             </p>
           </div>
@@ -427,7 +807,7 @@ export default function SurveyRecapDashboardPage() {
             <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">
               Positive Rate
             </p>
-            <p className="mt-1 text-2xl font-extrabold text-emerald-600">
+            <p className="mt-1 text-xl sm:text-2xl font-extrabold text-emerald-600 leading-tight">
               {stats.positiveRate}%
             </p>
           </div>
@@ -435,14 +815,14 @@ export default function SurveyRecapDashboardPage() {
             <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">
               Respon Hari Ini
             </p>
-            <p className="mt-1 text-2xl font-extrabold text-cyan-700">
+            <p className="mt-1 text-xl sm:text-2xl font-extrabold text-cyan-700 leading-tight">
               {stats.todayCount}
             </p>
           </div>
         </section>
 
         <section className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-          <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col h-full min-w-0">
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 size={18} className="text-primary" />
               <h2 className="text-base font-bold text-slate-900">
@@ -450,34 +830,90 @@ export default function SurveyRecapDashboardPage() {
               </h2>
             </div>
 
-            <div className="space-y-3">
-              {SAT_ORDER.map((k) => {
-                const count = stats.bySatisfaction[k];
-                const pct =
-                  stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
-                const width = Math.max(
-                  6,
-                  Math.round((count / maxSatCount) * 100),
-                );
-                return (
-                  <div key={k}>
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className={`font-semibold ${SAT_LABEL_COLOR[k]}`}>
-                        {k}
-                      </span>
-                      <span className="text-slate-500">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center min-h-[220px] sm:min-h-[300px]">
+              <div className="flex items-center justify-center">
+                <div className="relative w-[160px] h-[160px] sm:w-[220px] sm:h-[220px]">
+                  <svg
+                    viewBox="0 0 160 160"
+                    className="w-full h-full -rotate-90"
+                  >
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r={donutRadius}
+                      fill="none"
+                      stroke="#e2e8f0"
+                      strokeWidth={donutStroke}
+                    />
+                    {donutSegments.map((seg) => {
+                      if (seg.count <= 0 || seg.fraction <= 0) return null;
+                      return (
+                        <circle
+                          key={seg.key}
+                          cx="80"
+                          cy="80"
+                          r={donutRadius}
+                          fill="none"
+                          strokeWidth={donutStroke}
+                          strokeLinecap="butt"
+                          strokeDasharray={seg.dasharray}
+                          strokeDashoffset={seg.dashoffset}
+                          className={
+                            seg.key === "Sangat Puas"
+                              ? "stroke-emerald-500"
+                              : seg.key === "Puas"
+                                ? "stroke-cyan-500"
+                                : seg.key === "Kurang Puas"
+                                  ? "stroke-amber-500"
+                                  : "stroke-rose-500"
+                          }
+                        />
+                      );
+                    })}
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                      Total
+                    </p>
+                    <p className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight">
+                      {stats.total}
+                    </p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 mt-1">
+                      {stats.positiveRate}% Positif
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {SAT_ORDER.map((k) => {
+                  const count = stats.bySatisfaction[k];
+                  const pct =
+                    stats.total > 0
+                      ? Math.round((count / stats.total) * 100)
+                      : 0;
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-2.5 py-2"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`inline-block w-2.5 h-2.5 rounded-full ${SAT_COLOR[k]}`}
+                        />
+                        <span
+                          className={`text-xs font-semibold truncate ${SAT_LABEL_COLOR[k]}`}
+                        >
+                          {k}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-600 shrink-0">
                         {count} ({pct}%)
                       </span>
                     </div>
-                    <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${SAT_COLOR[k]}`}
-                        style={{ width: `${width}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             <div className="mt-4 rounded-2xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600">
@@ -485,15 +921,18 @@ export default function SurveyRecapDashboardPage() {
                 <SmilePlus size={16} className="text-primary" />
                 Insight Cepat
               </p>
-              <p className="mt-1">
-                {stats.positiveRate >= 80
-                  ? "Mayoritas pelanggan merasa puas. Pertahankan standar layanan saat ini."
-                  : "Masih ada ruang peningkatan. Fokus pada feedback pelanggan untuk perbaikan layanan."}
+              <p className="mt-1 font-semibold text-slate-700">
+                {quickInsight.headline}
+              </p>
+              <p className="mt-1">{quickInsight.detail}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Dasar insight: distribusi kepuasan, tren 7 hari, dan proporsi
+                feedback.
               </p>
             </div>
           </div>
 
-          <div className="xl:col-span-3 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div className="xl:col-span-3 bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 min-w-0">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={18} className="text-primary" />
               <h2 className="text-base font-bold text-slate-900">
@@ -501,37 +940,264 @@ export default function SurveyRecapDashboardPage() {
               </h2>
             </div>
 
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                  Total 7 Hari
+                </p>
+                <p className="text-lg font-extrabold text-slate-900 mt-0.5">
+                  {stats.trendTotal}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                  Rata-Rata / Hari
+                </p>
+                <p className="text-lg font-extrabold text-cyan-700 mt-0.5">
+                  {stats.trendAverage}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                  Puncak Respon
+                </p>
+                <p
+                  className="text-sm font-bold text-primary mt-0.5 break-words leading-snug"
+                  title={stats.peakLabel}
+                >
+                  {stats.peakCount > 0
+                    ? `${stats.peakCount} • ${stats.peakLabel}`
+                    : "Belum ada puncak"}
+                </p>
+              </div>
+            </div>
+
             {stats.trend.length === 0 ? (
               <div className="h-[220px] rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-sm text-slate-500">
                 Belum ada data survey.
               </div>
             ) : (
-              <div className="h-[220px] rounded-2xl border border-slate-200 bg-slate-50 p-3 flex items-end gap-2">
-                {stats.trend.map(([date, count]) => {
-                  const h = Math.max(
-                    12,
-                    Math.round((count / maxTrendCount) * 100),
-                  );
-                  return (
-                    <div
-                      key={date}
-                      className="flex-1 min-w-0 flex flex-col items-center justify-end gap-1"
-                    >
-                      <div className="text-[10px] text-slate-500">{count}</div>
-                      <div
-                        className="w-full rounded-t-md bg-primary/80"
-                        style={{ height: `${h}%` }}
-                      />
-                      <div className="text-[10px] text-slate-500 truncate w-full text-center">
-                        {fmtDate(date)}
-                      </div>
+              <>
+                <div
+                  className={`sm:hidden rounded-2xl border border-slate-200 bg-slate-50 p-3 transition-all duration-500 ease-out ${
+                    isTrendChartVisible
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-2 opacity-0"
+                  }`}
+                >
+                  <div className="rounded-2xl bg-white/80 border border-white px-2.5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400 mb-2">
+                      <span>0</span>
+                      <span>Puncak {maxTrendCount}</span>
                     </div>
-                  );
-                })}
-              </div>
+                    {mobileTrendChart ? (
+                      <svg
+                        viewBox="0 0 320 96"
+                        className="block h-24 w-full overflow-visible"
+                        aria-label="Sparkline tren survey 7 hari terakhir"
+                        role="img"
+                      >
+                        <defs>
+                          <linearGradient
+                            id="surveyTrendArea"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor="rgb(14 165 233)"
+                              stopOpacity="0.28"
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor="rgb(14 165 233)"
+                              stopOpacity="0.02"
+                            />
+                          </linearGradient>
+                        </defs>
+                        <line
+                          x1="10"
+                          y1={mobileTrendChart.baselineY}
+                          x2="310"
+                          y2={mobileTrendChart.baselineY}
+                          stroke="rgb(226 232 240)"
+                          strokeDasharray="4 4"
+                        />
+                        <path
+                          d={mobileTrendChart.areaPath}
+                          fill="url(#surveyTrendArea)"
+                          className={`transition-all duration-700 ease-out ${
+                            isTrendChartVisible
+                              ? "opacity-100"
+                              : "translate-y-2 opacity-0"
+                          }`}
+                        />
+                        {mobileTrendChart.lineSegments.map((segment) => (
+                          <line
+                            key={segment.key}
+                            x1={segment.x1}
+                            y1={segment.y1}
+                            x2={segment.x2}
+                            y2={segment.y2}
+                            stroke="rgb(8 145 178)"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            className="origin-left"
+                            style={{
+                              opacity: isTrendChartVisible ? 1 : 0,
+                              transform: isTrendChartVisible
+                                ? "scaleX(1)"
+                                : "scaleX(0.15)",
+                              transition: `opacity ${MOBILE_LIST_ENTER_MS}ms ${MOBILE_LIST_ENTER_EASING}, transform ${MOBILE_LIST_ENTER_MS}ms ${MOBILE_LIST_ENTER_EASING}`,
+                              transitionDelay: `${segment.delay}ms`,
+                            }}
+                          />
+                        ))}
+                        {mobileTrendChart.points.map((point, index) => (
+                          <g
+                            key={point.key}
+                            style={{
+                              opacity: isTrendChartVisible ? 1 : 0,
+                              transform: isTrendChartVisible
+                                ? "translateY(0px) scale(1)"
+                                : "translateY(4px) scale(0.85)",
+                              transformOrigin: `${point.x}px ${point.y}px`,
+                              transition: `opacity ${MOBILE_LIST_ENTER_MS}ms ${MOBILE_LIST_ENTER_EASING}, transform ${MOBILE_LIST_ENTER_MS}ms ${MOBILE_LIST_ENTER_EASING}`,
+                              transitionDelay: `${index * 90 + 60}ms`,
+                            }}
+                          >
+                            <circle
+                              cx={point.x}
+                              cy={point.y}
+                              r="4.5"
+                              fill="white"
+                              stroke="rgb(8 145 178)"
+                              strokeWidth="2.5"
+                            />
+                            <text
+                              x={point.x}
+                              y={Math.max(12, point.y - 10)}
+                              textAnchor="middle"
+                              className="fill-slate-500 text-[10px] font-semibold"
+                            >
+                              {point.count}
+                            </text>
+                          </g>
+                        ))}
+                      </svg>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 grid grid-cols-7 gap-1.5">
+                    {stats.trend.map((point) => (
+                      <div
+                        key={point.key}
+                        className="rounded-xl border border-slate-200 bg-white px-1.5 py-2 text-center"
+                        title={`${point.dayLabel}, ${point.dateLabel}: ${point.count} respon`}
+                      >
+                        <div className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 truncate">
+                          {point.dayLabel}
+                        </div>
+                        <div className="mt-1 text-xs font-bold text-slate-800">
+                          {point.count}
+                        </div>
+                        <div className="mt-0.5 text-[9px] text-slate-400 truncate">
+                          {point.dateLabel}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  className={`hidden sm:flex h-[260px] rounded-2xl border border-slate-200 bg-slate-50 p-4 gap-3 transition-all duration-500 ease-out ${
+                    isTrendChartVisible
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-2 opacity-0"
+                  }`}
+                >
+                  <div className="w-8 h-full flex flex-col justify-between text-[10px] text-slate-400 font-semibold pt-1 pb-9">
+                    <span>{maxTrendCount}</span>
+                    <span>{trendAxisMid}</span>
+                    <span>0</span>
+                  </div>
+
+                  <div className="relative flex-1 h-full border-l border-b border-slate-200 px-2 pb-9 pt-1 min-w-0">
+                    <div className="absolute left-0 right-0 top-[10%] border-t border-dashed border-slate-200" />
+                    <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-slate-200" />
+
+                    <div className="h-full w-full flex items-end justify-between gap-2">
+                      {stats.trend.map((point, index) => {
+                        const h = Math.max(
+                          8,
+                          Math.round((point.count / maxTrendCount) * 100),
+                        );
+                        return (
+                          <div
+                            key={point.key}
+                            className="flex-1 min-w-0 flex flex-col items-center justify-end gap-1.5 group transition-all duration-500 ease-out"
+                            title={`${point.dayLabel}, ${point.dateLabel}: ${point.count} respon`}
+                            style={{
+                              opacity: isTrendChartVisible ? 1 : 0,
+                              transform: isTrendChartVisible
+                                ? "translateY(0px)"
+                                : "translateY(10px)",
+                              transitionDelay: `${index * 90}ms`,
+                            }}
+                          >
+                            <div
+                              className="text-[10px] text-slate-500 font-semibold transition-all duration-500 ease-out"
+                              style={{
+                                opacity: isTrendChartVisible ? 1 : 0,
+                                transform: isTrendChartVisible
+                                  ? "translateY(0px)"
+                                  : "translateY(4px)",
+                                transitionDelay: `${index * 90 + 70}ms`,
+                              }}
+                            >
+                              {point.count}
+                            </div>
+                            <div
+                              className="w-full rounded-t-md bg-gradient-to-t from-primary to-cyan-400/90 transition-all duration-300 group-hover:brightness-110"
+                              style={{
+                                height: `${h}%`,
+                                opacity: isTrendChartVisible ? 1 : 0.35,
+                                transform: isTrendChartVisible
+                                  ? "scaleY(1)"
+                                  : "scaleY(0.2)",
+                                transformOrigin: "bottom",
+                                transitionDuration: "520ms",
+                                transitionDelay: `${index * 90}ms`,
+                              }}
+                            />
+                            <div
+                              className="w-full text-center leading-tight transition-all duration-500 ease-out"
+                              style={{
+                                opacity: isTrendChartVisible ? 1 : 0,
+                                transform: isTrendChartVisible
+                                  ? "translateY(0px)"
+                                  : "translateY(6px)",
+                                transitionDelay: `${index * 90 + 110}ms`,
+                              }}
+                            >
+                              <div className="text-[10px] font-semibold text-slate-600 truncate">
+                                {point.dayLabel}
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">
+                                {point.dateLabel}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
                   Feedback Terkirim
@@ -633,46 +1299,318 @@ export default function SurveyRecapDashboardPage() {
               Data tidak ditemukan. Coba ubah filter atau kata kunci pencarian.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200">
-              <table className="w-full text-sm bg-white">
-                <thead>
-                  <tr className="text-left text-slate-500 border-b border-slate-200 bg-slate-50">
-                    <th className="py-2.5 px-3 font-semibold">Tanggal</th>
-                    <th className="py-2.5 px-3 font-semibold">No. HP</th>
-                    <th className="py-2.5 px-3 font-semibold">Kepuasan</th>
-                    <th className="py-2.5 px-3 font-semibold">Saran/Kritik</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.map((item, idx) => (
-                    <tr
-                      key={`${item.phoneNumber}-${idx}`}
-                      className="border-b border-slate-100 align-top hover:bg-slate-50"
-                    >
-                      <td className="py-2.5 px-3 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 text-slate-700">
-                          <CalendarDays size={13} className="text-slate-400" />
-                          {fmtDate(item.inputDate)}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-700">
-                        {item.phoneNumber || "-"}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span
-                          className={`text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 ${SAT_LABEL_COLOR[item.satisfaction]}`}
+            <>
+              <div className="md:hidden mb-3 flex items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-3 py-2 text-[11px] text-cyan-800">
+                <span className="inline-flex items-center gap-1.5 font-semibold">
+                  <ChevronLeft size={14} className="text-cyan-600" />
+                  <span>Geser untuk pindah halaman</span>
+                  <ChevronRight size={14} className="text-cyan-600" />
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-cyan-700">
+                  <span className="block h-1.5 w-1.5 rounded-full bg-cyan-500" />
+                  <span>Swipe kiri/kanan</span>
+                </span>
+              </div>
+              <div className="grid gap-3 md:hidden">
+                <div className="relative overflow-hidden rounded-[26px]">
+                  <div
+                    className={`pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 rounded-l-[26px] bg-gradient-to-r from-cyan-200/55 via-cyan-100/30 to-transparent transition-all duration-200 ${
+                      showLeftEdgeHint ||
+                      (mobilePage === 1 && mobileDragOffset > 6)
+                        ? "opacity-100"
+                        : "opacity-0"
+                    }`}
+                    style={{
+                      transform:
+                        edgePulseSide === "left" ? "scaleX(1.14)" : "scaleX(1)",
+                      transitionDuration: `${MOBILE_EDGE_PULSE_MS}ms`,
+                      transitionTimingFunction: MOBILE_LIST_ENTER_EASING,
+                    }}
+                  >
+                    <div className="flex h-full items-center justify-center">
+                      <ChevronLeft
+                        size={14}
+                        className={`text-cyan-700/80 transition-all ${
+                          edgePulseSide === "left"
+                            ? "scale-110 opacity-100"
+                            : ""
+                        }`}
+                        style={{
+                          transitionDuration: `${MOBILE_EDGE_PULSE_MS}ms`,
+                          transitionTimingFunction: MOBILE_LIST_ENTER_EASING,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className={`pointer-events-none absolute inset-y-0 right-0 z-[1] w-8 rounded-r-[26px] bg-gradient-to-l from-cyan-200/55 via-cyan-100/30 to-transparent transition-all duration-200 ${
+                      showRightEdgeHint ||
+                      (mobilePage === mobilePageCount && mobileDragOffset < -6)
+                        ? "opacity-100"
+                        : "opacity-0"
+                    }`}
+                    style={{
+                      transform:
+                        edgePulseSide === "right"
+                          ? "scaleX(1.14)"
+                          : "scaleX(1)",
+                      transitionDuration: `${MOBILE_EDGE_PULSE_MS}ms`,
+                      transitionTimingFunction: MOBILE_LIST_ENTER_EASING,
+                    }}
+                  >
+                    <div className="flex h-full items-center justify-center">
+                      <ChevronRight
+                        size={14}
+                        className={`text-cyan-700/80 transition-all ${
+                          edgePulseSide === "right"
+                            ? "scale-110 opacity-100"
+                            : ""
+                        }`}
+                        style={{
+                          transitionDuration: `${MOBILE_EDGE_PULSE_MS}ms`,
+                          transitionTimingFunction: MOBILE_LIST_ENTER_EASING,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="grid gap-3"
+                    onTouchStart={(event) =>
+                      handleMobileCardsTouchStart(
+                        event.changedTouches[0].clientX,
+                        event.changedTouches[0].clientY,
+                      )
+                    }
+                    onTouchMove={(event) =>
+                      handleMobileCardsTouchMove(
+                        event.changedTouches[0].clientX,
+                        event.changedTouches[0].clientY,
+                      )
+                    }
+                    onTouchEnd={(event) =>
+                      handleMobileCardsTouchEnd(event.changedTouches[0].clientX)
+                    }
+                    onTouchCancel={handleMobileCardsTouchCancel}
+                    style={{
+                      touchAction: "pan-y",
+                      transform: `translateX(${mobileDragOffset}px)`,
+                      opacity:
+                        1 - Math.min(0.18, Math.abs(mobileDragOffset) / 240),
+                      transitionDuration:
+                        swipeStartXRef.current === null
+                          ? `${MOBILE_LIST_EXIT_MS}ms`
+                          : "0ms",
+                      transitionTimingFunction:
+                        swipeStartXRef.current === null
+                          ? MOBILE_LIST_EXIT_EASING
+                          : "linear",
+                    }}
+                  >
+                    {mobileRenderedRows.map((item, idx) => {
+                      const isExiting = mobileListPhase === "exiting";
+                      const isVisible = isMobileListVisible;
+                      const txEnter =
+                        mobileSlideDirection === "left"
+                          ? 20
+                          : mobileSlideDirection === "right"
+                            ? -20
+                            : 0;
+                      const txExit =
+                        mobileSlideDirection === "left"
+                          ? -16
+                          : mobileSlideDirection === "right"
+                            ? 16
+                            : 0;
+                      // parallax: each successive card starts fractionally smaller, creating depth on enter
+                      const scaleEnter = 0.97 - idx * 0.006;
+                      const itemTransform = isExiting
+                        ? `translateX(${txExit}px) translateY(4px) scale(0.98)`
+                        : isVisible
+                          ? "translateX(0px) translateY(0px) scale(1)"
+                          : `translateX(${txEnter}px) translateY(8px) scale(${scaleEnter.toFixed(3)})`;
+                      const itemOpacity = isExiting
+                        ? "opacity-0"
+                        : isVisible
+                          ? "opacity-100"
+                          : "opacity-0";
+
+                      return (
+                        <article
+                          key={`${mobilePage}-${item.phoneNumber}-${idx}`}
+                          className={`rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm ${itemOpacity}`}
+                          style={{
+                            transform: itemTransform,
+                            transition: `transform ${isExiting ? MOBILE_LIST_EXIT_MS : MOBILE_LIST_ENTER_MS}ms ${isExiting ? MOBILE_LIST_EXIT_EASING : MOBILE_LIST_ENTER_EASING}, opacity ${isExiting ? MOBILE_LIST_EXIT_MS : MOBILE_LIST_ENTER_MS}ms ${isExiting ? MOBILE_LIST_EXIT_EASING : MOBILE_LIST_ENTER_EASING}`,
+                            transitionDelay: `${idx * 45}ms`,
+                          }}
                         >
-                          {item.satisfaction}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-700">
-                        {item.feedback || "-"}
-                      </td>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                                Tanggal
+                              </p>
+                              <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-slate-700 leading-snug">
+                                <CalendarDays
+                                  size={13}
+                                  className="text-slate-400 shrink-0"
+                                />
+                                <span>{fmtDate(item.inputDate)}</span>
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 ${SAT_LABEL_COLOR[item.satisfaction]}`}
+                            >
+                              {item.satisfaction}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                            <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                              No. HP
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-slate-800 break-all">
+                              {item.phoneNumber || "-"}
+                            </p>
+                          </div>
+
+                          <div className="mt-3">
+                            <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+                              Saran/Kritik
+                            </p>
+                            <p className="mt-1.5 text-sm text-slate-700 leading-relaxed break-words">
+                              {item.feedback || "Tidak ada saran/kritik."}
+                            </p>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {tableRows.length > mobilePageSize ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                    <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+                      <span>
+                        Menampilkan {(mobilePage - 1) * mobilePageSize + 1}-
+                        {Math.min(
+                          mobilePage * mobilePageSize,
+                          tableRows.length,
+                        )}{" "}
+                        dari {tableRows.length}
+                      </span>
+                      <span>
+                        Halaman {mobilePage}/{mobilePageCount}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-center gap-2">
+                      {Array.from({ length: mobilePageCount }, (_, index) => {
+                        const pageNumber = index + 1;
+                        const isActive = pageNumber === mobilePage;
+                        return (
+                          <button
+                            key={pageNumber}
+                            type="button"
+                            onClick={() => setMobilePage(pageNumber)}
+                            aria-label={`Ke halaman ${pageNumber}`}
+                            aria-current={isActive ? "page" : undefined}
+                            className={`h-2.5 rounded-full transition-all ${
+                              isActive
+                                ? `w-6 bg-primary ${
+                                    isActiveDotFlashing
+                                      ? "scale-125 shadow-[0_0_0_4px_rgba(14,165,233,0.18)]"
+                                      : "scale-100"
+                                  }`
+                                : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                            }`}
+                            style={{
+                              transitionDuration: `${MOBILE_DOT_FLASH_MS}ms`,
+                              transitionTimingFunction:
+                                MOBILE_LIST_ENTER_EASING,
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMobilePage((page) => Math.max(1, page - 1))
+                        }
+                        disabled={mobilePage === 1}
+                        className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Sebelumnya
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMobilePage((page) =>
+                            Math.min(mobilePageCount, page + 1),
+                          )
+                        }
+                        disabled={mobilePage === mobilePageCount}
+                        className="inline-flex items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Berikutnya
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full md:table-fixed text-sm bg-white">
+                  <thead>
+                    <tr className="text-left text-slate-500 border-b border-slate-200 bg-slate-50">
+                      <th className="py-2.5 px-3 font-semibold md:w-[140px]">
+                        Tanggal
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold md:w-[140px]">
+                        No. HP
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold md:w-[150px]">
+                        Kepuasan
+                      </th>
+                      <th className="py-2.5 px-3 font-semibold md:w-[55%]">
+                        Saran/Kritik
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {tableRows.map((item, idx) => (
+                      <tr
+                        key={`${item.phoneNumber}-${idx}`}
+                        className="border-b border-slate-100 align-top hover:bg-slate-50"
+                      >
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-slate-700">
+                            <CalendarDays
+                              size={13}
+                              className="text-slate-400"
+                            />
+                            {fmtDate(item.inputDate)}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-700">
+                          {item.phoneNumber || "-"}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span
+                            className={`text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 ${SAT_LABEL_COLOR[item.satisfaction]}`}
+                          >
+                            {item.satisfaction}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-700 break-words">
+                          {item.feedback || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </section>
       </main>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Save,
   RefreshCw,
@@ -10,6 +10,26 @@ import {
   Database,
 } from "lucide-react";
 import { getConfig, updateConfig } from "../api";
+
+type ConfigSnapshot = {
+  officeName: string;
+  resetTime: string;
+  dateFormat: string;
+  youtubeUrl: string;
+  autoPrint: boolean;
+  printMode: string;
+  printTimeoutMs: number;
+  printRetryCount: number;
+  printerConnectionType: string;
+  ttsVoiceUri: string;
+  ttsPitch: number;
+  ttsRate: number;
+  videoVolume: number;
+  videoVolumeDucked: number;
+  logsAutoCleanup: boolean;
+  logsRetentionDays: number;
+  runningText: string;
+};
 
 export default function ServiceConfigPage() {
   const [loading, setLoading] = useState(false);
@@ -40,6 +60,7 @@ export default function ServiceConfigPage() {
   const [availableVoices, setAvailableVoices] = useState<
     SpeechSynthesisVoice[]
   >([]);
+  const [savedConfig, setSavedConfig] = useState<ConfigSnapshot | null>(null);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -60,37 +81,102 @@ export default function ServiceConfigPage() {
     try {
       const data = await getConfig();
       if (data) {
-        if (data.officeName !== undefined) setOfficeName(data.officeName);
-        if (data.resetTime !== undefined) setResetTime(data.resetTime);
-        if (data.dateFormat !== undefined) setDateFormat(data.dateFormat);
-        if (data.youtubeUrl !== undefined) setYoutubeUrl(data.youtubeUrl);
-        if (data.autoPrint !== undefined) setAutoPrint(data.autoPrint);
-        if (data.printMode !== undefined) setPrintMode(String(data.printMode));
-        if (data.printTimeoutMs !== undefined)
-          setPrintTimeoutMs(Number(data.printTimeoutMs));
-        if (data.printRetryCount !== undefined)
-          setPrintRetryCount(Number(data.printRetryCount));
-        if (data.printerConnectionType !== undefined)
-          setPrinterConnectionType(String(data.printerConnectionType));
-        if (data.ttsVoiceUri !== undefined) setTtsVoiceUri(data.ttsVoiceUri);
-        if (data.ttsPitch !== undefined) setTtsPitch(Number(data.ttsPitch));
-        if (data.ttsRate !== undefined) setTtsRate(Number(data.ttsRate));
-        if (data.videoVolume !== undefined)
-          setVideoVolume(Number(data.videoVolume));
-        if (data.videoVolumeDucked !== undefined)
-          setVideoVolumeDucked(Number(data.videoVolumeDucked));
-        if (data.logsAutoCleanup !== undefined)
-          setLogsAutoCleanup(
-            data.logsAutoCleanup === true ||
-              String(data.logsAutoCleanup).toLowerCase() === "true",
-          );
+        const nextOfficeName =
+          data.officeName !== undefined ? String(data.officeName) : officeName;
+        const nextResetTime =
+          data.resetTime !== undefined ? String(data.resetTime) : resetTime;
+        const nextDateFormat =
+          data.dateFormat !== undefined ? String(data.dateFormat) : dateFormat;
+        const nextYoutubeUrl =
+          data.youtubeUrl !== undefined ? String(data.youtubeUrl) : youtubeUrl;
+        const nextAutoPrint =
+          data.autoPrint !== undefined ? Boolean(data.autoPrint) : autoPrint;
+        const nextPrintMode =
+          data.printMode !== undefined ? String(data.printMode) : printMode;
+        const nextPrintTimeoutMs =
+          data.printTimeoutMs !== undefined
+            ? Number(data.printTimeoutMs)
+            : printTimeoutMs;
+        const nextPrintRetryCount =
+          data.printRetryCount !== undefined
+            ? Number(data.printRetryCount)
+            : printRetryCount;
+        const nextPrinterConnectionType =
+          data.printerConnectionType !== undefined
+            ? String(data.printerConnectionType)
+            : printerConnectionType;
+        const nextTtsVoiceUri =
+          data.ttsVoiceUri !== undefined
+            ? String(data.ttsVoiceUri)
+            : ttsVoiceUri;
+        const nextTtsPitch =
+          data.ttsPitch !== undefined ? Number(data.ttsPitch) : ttsPitch;
+        const nextTtsRate =
+          data.ttsRate !== undefined ? Number(data.ttsRate) : ttsRate;
+        const nextVideoVolume =
+          data.videoVolume !== undefined
+            ? Number(data.videoVolume)
+            : videoVolume;
+        const nextVideoVolumeDucked =
+          data.videoVolumeDucked !== undefined
+            ? Number(data.videoVolumeDucked)
+            : videoVolumeDucked;
+        const nextLogsAutoCleanup =
+          data.logsAutoCleanup !== undefined
+            ? data.logsAutoCleanup === true ||
+              String(data.logsAutoCleanup).toLowerCase() === "true"
+            : logsAutoCleanup;
+
+        let nextLogsRetentionDays = logsRetentionDays;
         if (data.logsRetentionDays !== undefined) {
           const days = Number(data.logsRetentionDays);
           if (Number.isFinite(days)) {
-            setLogsRetentionDays(Math.max(1, Math.min(3650, days)));
+            nextLogsRetentionDays = Math.max(1, Math.min(3650, days));
           }
         }
-        if (data.runningText !== undefined) setRunningText(data.runningText);
+
+        const nextRunningText =
+          data.runningText !== undefined
+            ? String(data.runningText)
+            : runningText;
+
+        setOfficeName(nextOfficeName);
+        setResetTime(nextResetTime);
+        setDateFormat(nextDateFormat);
+        setYoutubeUrl(nextYoutubeUrl);
+        setAutoPrint(nextAutoPrint);
+        setPrintMode(nextPrintMode);
+        setPrintTimeoutMs(nextPrintTimeoutMs);
+        setPrintRetryCount(nextPrintRetryCount);
+        setPrinterConnectionType(nextPrinterConnectionType);
+        setTtsVoiceUri(nextTtsVoiceUri);
+        setTtsPitch(nextTtsPitch);
+        setTtsRate(nextTtsRate);
+        setVideoVolume(nextVideoVolume);
+        setVideoVolumeDucked(nextVideoVolumeDucked);
+        setLogsAutoCleanup(nextLogsAutoCleanup);
+        setLogsRetentionDays(nextLogsRetentionDays);
+        setRunningText(nextRunningText);
+
+        setSavedConfig({
+          officeName: nextOfficeName,
+          resetTime: nextResetTime,
+          dateFormat: nextDateFormat,
+          youtubeUrl: nextYoutubeUrl,
+          autoPrint: nextAutoPrint,
+          printMode: nextPrintMode,
+          printTimeoutMs: nextPrintTimeoutMs,
+          printRetryCount: nextPrintRetryCount,
+          printerConnectionType: nextPrinterConnectionType,
+          ttsVoiceUri: nextTtsVoiceUri,
+          ttsPitch: nextTtsPitch,
+          ttsRate: nextTtsRate,
+          videoVolume: nextVideoVolume,
+          videoVolumeDucked: nextVideoVolumeDucked,
+          logsAutoCleanup: nextLogsAutoCleanup,
+          logsRetentionDays: nextLogsRetentionDays,
+          runningText: nextRunningText,
+        });
       }
     } catch (error) {
       console.error(error);
@@ -155,14 +241,87 @@ export default function ServiceConfigPage() {
     });
   };
 
+  const currentConfig: ConfigSnapshot = useMemo(
+    () => ({
+      officeName,
+      resetTime,
+      dateFormat,
+      youtubeUrl,
+      autoPrint,
+      printMode,
+      printTimeoutMs,
+      printRetryCount,
+      printerConnectionType,
+      ttsVoiceUri,
+      ttsPitch,
+      ttsRate,
+      videoVolume,
+      videoVolumeDucked,
+      logsAutoCleanup,
+      logsRetentionDays,
+      runningText,
+    }),
+    [
+      officeName,
+      resetTime,
+      dateFormat,
+      youtubeUrl,
+      autoPrint,
+      printMode,
+      printTimeoutMs,
+      printRetryCount,
+      printerConnectionType,
+      ttsVoiceUri,
+      ttsPitch,
+      ttsRate,
+      videoVolume,
+      videoVolumeDucked,
+      logsAutoCleanup,
+      logsRetentionDays,
+      runningText,
+    ],
+  );
+
+  const changedFieldsCount = useMemo(() => {
+    if (!savedConfig) return 0;
+    const keys = Object.keys(currentConfig) as Array<keyof ConfigSnapshot>;
+    return keys.reduce((count, key) => {
+      return count + (currentConfig[key] !== savedConfig[key] ? 1 : 0);
+    }, 0);
+  }, [currentConfig, savedConfig]);
+
+  const configStatusText = useMemo(() => {
+    if (loading && !hasLoadedConfig) return "Memuat konfigurasi dari server...";
+    if (changedFieldsCount > 0) {
+      return `${changedFieldsCount} perubahan belum disimpan.`;
+    }
+    return "Semua konfigurasi sudah sinkron.";
+  }, [loading, hasLoadedConfig, changedFieldsCount]);
+
   return (
     <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] text-on-background min-h-full p-sm md:p-lg lg:p-safe-margin">
-      <div className="max-w-5xl mx-auto">
-        {!hasLoadedConfig && (
-          <div className="mb-md p-4 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm font-label-sm text-on-surface-variant">
-            Memuat konfigurasi dari server...
+      <div className="max-w-none w-full">
+        <div className="fixed top-5 right-5 z-50 pointer-events-none">
+          <div
+            className={`pointer-events-auto transition-all duration-300 ${
+              loading ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+            }`}
+            aria-live="polite"
+            aria-hidden={!loading}
+          >
+            <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-sm shadow-lg px-4 py-3 flex items-center gap-3 min-w-[280px]">
+              <RefreshCw size={16} className="text-primary animate-spin" />
+              <div>
+                <p className="text-sm font-semibold text-on-surface">
+                  Memuat Konfigurasi
+                </p>
+                <p className="text-xs text-on-surface-variant">
+                  Mengambil data terbaru dari server...
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Page Header (Queue Control Style) */}
         <header className="mb-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
@@ -174,8 +333,14 @@ export default function ServiceConfigPage() {
               Pengaturan tampilan TV dan fungsionalitas kiosk.
             </p>
           </div>
-          <div className="text-xs sm:text-sm text-slate-500">
-            Sesuaikan konfigurasi sebelum disimpan.
+          <div
+            className={`text-xs sm:text-sm ${
+              changedFieldsCount > 0
+                ? "text-amber-600 font-semibold"
+                : "text-slate-500"
+            }`}
+          >
+            {configStatusText}
           </div>
         </header>
 
@@ -192,10 +357,10 @@ export default function ServiceConfigPage() {
           </div>
         )}
 
-        {/* 12-column grid: 8 left + 4 right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-md">
-          {/* ── Left column (8 cols) ── */}
-          <div className="lg:col-span-8 space-y-md">
+        {/* Balanced 2-column grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-md items-start">
+          {/* ── Left column ── */}
+          <div className="space-y-md">
             {/* General Configuration Card */}
             <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
@@ -320,120 +485,6 @@ export default function ServiceConfigPage() {
               </div>
             </section>
 
-            {/* Display & Media Card */}
-            <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-md py-sm border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                <h2 className="font-heading-md text-on-surface flex items-center gap-2">
-                  <MonitorPlay size={22} className="text-secondary" />
-                  Display &amp; Media
-                </h2>
-                <button
-                  onClick={fetchConfig}
-                  disabled={loading}
-                  title="Muat ulang pengaturan"
-                  className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container"
-                >
-                  <RefreshCw
-                    size={18}
-                    className={loading ? "animate-spin" : ""}
-                  />
-                </button>
-              </div>
-              <div className="p-md space-y-sm">
-                <div>
-                  <label className="block font-label-sm text-on-surface-variant mb-base">
-                    URL Video YouTube / Playlist
-                  </label>
-                  <input
-                    type="text"
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
-                  />
-                  <p className="text-xs text-on-surface-variant mt-1">
-                    Gunakan URL{" "}
-                    <code className="bg-surface-container px-1 rounded">
-                      watch?v=...
-                    </code>{" "}
-                    atau{" "}
-                    <code className="bg-surface-container px-1 rounded">
-                      playlist?list=...
-                    </code>
-                    . Video/playlist di-loop otomatis.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block font-label-sm text-on-surface-variant mb-base">
-                    Running Text / Ticker
-                  </label>
-                  <textarea
-                    value={runningText}
-                    onChange={(e) => setRunningText(e.target.value)}
-                    rows={3}
-                    placeholder="Pesan yang ditampilkan sebagai berjalan di layar TV..."
-                    className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface resize-none"
-                  />
-                  <p className="text-xs text-on-surface-variant mt-1">
-                    Teks berjalan yang tampil di bagian bawah layar TV Display.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
-                  {/* Normal Volume */}
-                  <div>
-                    <div className="flex justify-between mb-base">
-                      <label className="font-label-sm text-on-surface-variant">
-                        Volume Video Normal
-                      </label>
-                      <span className="font-label-sm text-on-surface">
-                        {videoVolume}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={5}
-                      value={videoVolume}
-                      onChange={(e) => setVideoVolume(Number(e.target.value))}
-                      className="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
-                    <p className="text-xs text-on-surface-variant mt-1">
-                      Volume saat tidak ada pemanggilan antrian.
-                    </p>
-                  </div>
-
-                  {/* Ducked Volume */}
-                  <div>
-                    <div className="flex justify-between mb-base">
-                      <label className="font-label-sm text-on-surface-variant">
-                        Volume Saat Memanggil
-                      </label>
-                      <span className="font-label-sm text-on-surface">
-                        {videoVolumeDucked}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={50}
-                      step={5}
-                      value={videoVolumeDucked}
-                      onChange={(e) =>
-                        setVideoVolumeDucked(Number(e.target.value))
-                      }
-                      className="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
-                    <p className="text-xs text-on-surface-variant mt-1">
-                      Volume selama TTS membaca antrian (maks. 50%).
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
             {/* Kiosk Printer Card */}
             <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
@@ -551,8 +602,122 @@ export default function ServiceConfigPage() {
             </section>
           </div>
 
-          {/* ── Right column (4 cols) ── */}
-          <div className="lg:col-span-4 space-y-md">
+          {/* ── Right column ── */}
+          <div className="space-y-md">
+            {/* Display & Media Card */}
+            <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-md py-sm border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                <h2 className="font-heading-md text-on-surface flex items-center gap-2">
+                  <MonitorPlay size={22} className="text-secondary" />
+                  Display &amp; Media
+                </h2>
+                <button
+                  onClick={fetchConfig}
+                  disabled={loading}
+                  title="Muat ulang pengaturan"
+                  className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container"
+                >
+                  <RefreshCw
+                    size={18}
+                    className={loading ? "animate-spin" : ""}
+                  />
+                </button>
+              </div>
+              <div className="p-md space-y-sm">
+                <div>
+                  <label className="block font-label-sm text-on-surface-variant mb-base">
+                    URL Video YouTube / Playlist
+                  </label>
+                  <input
+                    type="text"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface"
+                  />
+                  <p className="text-xs text-on-surface-variant mt-1">
+                    Gunakan URL{" "}
+                    <code className="bg-surface-container px-1 rounded">
+                      watch?v=...
+                    </code>{" "}
+                    atau{" "}
+                    <code className="bg-surface-container px-1 rounded">
+                      playlist?list=...
+                    </code>
+                    . Video/playlist di-loop otomatis.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-label-sm text-on-surface-variant mb-base">
+                    Running Text / Ticker
+                  </label>
+                  <textarea
+                    value={runningText}
+                    onChange={(e) => setRunningText(e.target.value)}
+                    rows={3}
+                    placeholder="Pesan yang ditampilkan sebagai berjalan di layar TV..."
+                    className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none text-on-surface resize-none"
+                  />
+                  <p className="text-xs text-on-surface-variant mt-1">
+                    Teks berjalan yang tampil di bagian bawah layar TV Display.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+                  {/* Normal Volume */}
+                  <div>
+                    <div className="flex justify-between mb-base">
+                      <label className="font-label-sm text-on-surface-variant">
+                        Volume Video Normal
+                      </label>
+                      <span className="font-label-sm text-on-surface">
+                        {videoVolume}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={videoVolume}
+                      onChange={(e) => setVideoVolume(Number(e.target.value))}
+                      className="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Volume saat tidak ada pemanggilan antrian.
+                    </p>
+                  </div>
+
+                  {/* Ducked Volume */}
+                  <div>
+                    <div className="flex justify-between mb-base">
+                      <label className="font-label-sm text-on-surface-variant">
+                        Volume Saat Memanggil
+                      </label>
+                      <span className="font-label-sm text-on-surface">
+                        {videoVolumeDucked}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={50}
+                      step={5}
+                      value={videoVolumeDucked}
+                      onChange={(e) =>
+                        setVideoVolumeDucked(Number(e.target.value))
+                      }
+                      className="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Volume selama TTS membaca antrian (maks. 50%).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Audio & Voice Card */}
             <section className="bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-md py-sm border-b border-slate-200 bg-slate-50">
