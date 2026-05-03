@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Send,
   Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 import { submitCustomerSatisfaction } from "../api";
 import { useAuth } from "../context/AuthContext";
@@ -65,6 +66,7 @@ export default function CustomerSatisfactionPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [autoRedirectEnabled, setAutoRedirectEnabled] = useState(true);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
 
   const sidebarNavGroups = [
     {
@@ -122,7 +124,10 @@ export default function CustomerSatisfactionPage() {
     e.preventDefault();
 
     if (!inputDate || !phoneNumber.trim() || !satisfaction) {
-      alert("Tanggal, nomor HP, dan penilaian kepuasan wajib diisi.");
+      setErrorModal({
+        title: "Data Belum Lengkap",
+        message: "Tanggal, nomor HP, dan penilaian kepuasan wajib diisi.",
+      });
       return;
     }
 
@@ -149,7 +154,10 @@ export default function CustomerSatisfactionPage() {
       setFeedback("");
       setInputDate(today);
     } catch {
-      alert("Gagal menyimpan survei. Silakan coba lagi.");
+      setErrorModal({
+        title: "Gagal Menyimpan Survei",
+        message: "Gagal menyimpan survei. Silakan coba lagi.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -157,6 +165,32 @@ export default function CustomerSatisfactionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] flex flex-col items-center font-['Inter']">
+      {errorModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 backdrop-blur-[2px] p-4">
+          <div className="w-full max-w-sm rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-200 px-5 py-4 bg-gradient-to-br from-amber-50 via-white to-rose-50">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-bold text-slate-900">{errorModal.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{errorModal.message}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end px-5 py-4">
+              <button
+                onClick={() => setErrorModal(null)}
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-container"
+              >
+                Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isSidebarOpen && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"

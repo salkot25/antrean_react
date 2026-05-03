@@ -99,9 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             now - session.loginAt > ABSOLUTE_TIMEOUT_MS
           ) {
             logout();
-            alert("Sesi login Anda telah berakhir. Silakan login kembali.");
-            // We use window.location here so we don't need useNavigate which might cause issues outside router
-            window.location.href = "/login";
+            // Redirect ke login; pesan sesi berakhir ditampilkan melalui state URL
+            window.location.href = "/login?session=expired";
           }
         }
       } catch {

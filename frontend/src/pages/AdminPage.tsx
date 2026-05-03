@@ -15,7 +15,18 @@ import {
   Users,
   RefreshCw,
   RotateCcw,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
 } from "lucide-react";
+
+type AppModal = {
+  title: string;
+  message: string;
+  tone: "info" | "success" | "error" | "warning";
+  isConfirm?: boolean;
+  onConfirm?: () => void;
+} | null;
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -26,6 +37,16 @@ export default function AdminPage() {
   const [lastCalled, setLastCalled] = useState<any>(null);
   const [ttsConfig, setTtsConfig] = useState<TTSConfig>({});
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [appModal, setAppModal] = useState<AppModal>(null);
+
+  const showModal = (
+    title: string,
+    message: string,
+    tone: NonNullable<AppModal>["tone"],
+    options?: { isConfirm?: boolean; onConfirm?: () => void },
+  ) => setAppModal({ title, message, tone, ...options });
+
+  const closeModal = () => setAppModal(null);
 
   useEffect(() => {
     const fetchTtsConfig = async () => {
@@ -67,7 +88,10 @@ export default function AdminPage() {
   }, [service]);
 
   const handleCall = async (_skipId?: string) => {
-    if (queues.length === 0) return alert("Tidak ada antrean yang menunggu.");
+    if (queues.length === 0) {
+      showModal("Antrean Kosong", "Tidak ada antrean yang menunggu saat ini.", "info");
+      return;
+    }
     setLoading(true);
     try {
       // Pass the service name based on dropdown choice or first queue's service if "Semua Layanan"
@@ -92,14 +116,17 @@ export default function AdminPage() {
       fetchQueues();
     } catch (error) {
       console.error(error);
-      alert("Gagal memanggil antrean.");
+      showModal("Gagal Memanggil", "Gagal memanggil antrean. Silakan coba lagi.", "error");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRecall = () => {
-    if (!lastCalled) return alert("Belum ada antrean yang dipanggil.");
+    if (!lastCalled) {
+      showModal("Belum Ada Panggilan", "Belum ada antrean yang dipanggil sebelumnya.", "info");
+      return;
+    }
     speakQueue(
       lastCalled.number,
       lastCalled.counter || "Loket Customer Service",
@@ -107,32 +134,101 @@ export default function AdminPage() {
     );
   };
 
-  const handleResetQueueData = async () => {
-    const ok = window.confirm(
+  const handleResetQueueData = () => {
+    showModal(
+      "Konfirmasi Reset Data",
       "Reset seluruh data antrean dan counter? Tindakan ini tidak dapat dibatalkan.",
+      "warning",
+      {
+        isConfirm: true,
+        onConfirm: async () => {
+          setAppModal(null);
+          setResetting(true);
+          try {
+            const res = await resetQueueData(user?.username || "system");
+            if (res?.error) {
+              showModal("Reset Gagal", res.error, "error");
+              return;
+            }
+            setLastCalled(null);
+            await fetchQueues();
+            showModal("Reset Berhasil", "Data antrean berhasil direset.", "success");
+          } catch (error) {
+            console.error(error);
+            showModal("Reset Gagal", "Gagal reset data antrean. Silakan coba lagi.", "error");
+          } finally {
+            setResetting(false);
+          }
+        },
+      },
     );
-    if (!ok) return;
-
-    setResetting(true);
-    try {
-      const res = await resetQueueData(user?.username || "system");
-      if (res?.error) {
-        alert(res.error);
-        return;
-      }
-      setLastCalled(null);
-      await fetchQueues();
-      alert("Data antrean berhasil direset.");
-    } catch (error) {
-      console.error(error);
-      alert("Gagal reset data antrean.");
-    } finally {
-      setResetting(false);
-    }
   };
 
   return (
     <div className="px-4 py-4 sm:px-10 sm:py-8 flex flex-col gap-6 sm:gap-8 h-full bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb]">
+      {appModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 backdrop-blur-[2px] p-4">
+          <div className="w-full max-w-sm rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-2xl">
+            <div
+              className={`border-b border-slate-200 px-5 py-4 ${
+                appModal.tone === "success"
+                  ? "bg-gradient-to-br from-emerald-50 via-white to-cyan-50"
+                  : appModal.tone === "error"
+                    ? "bg-gradient-to-br from-rose-50 via-white to-amber-50"
+                    : appModal.tone === "warning"
+                      ? "bg-gradient-to-br from-amber-50 via-white to-orange-50"
+                      : "bg-gradient-to-br from-blue-50 via-white to-cyan-50"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                    appModal.tone === "success"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : appModal.tone === "error"
+                        ? "bg-rose-100 text-rose-700"
+                        : appModal.tone === "warning"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  {appModal.tone === "success" ? (
+                    <CheckCircle2 size={20} />
+                  ) : appModal.tone === "info" ? (
+                    <Info size={20} />
+                  ) : (
+                    <AlertTriangle size={20} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-bold text-slate-900">{appModal.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">{appModal.message}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4">
+              {appModal.isConfirm && (
+                <button
+                  onClick={closeModal}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+              )}
+              <button
+                onClick={appModal.isConfirm ? appModal.onConfirm : closeModal}
+                className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors ${
+                  appModal.tone === "error" || appModal.tone === "warning"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-primary hover:bg-primary-container"
+                }`}
+              >
+                {appModal.isConfirm ? "Ya, Reset" : "Mengerti"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header & Counter Selection */}
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white/95 backdrop-blur-sm p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200">
         <div>
