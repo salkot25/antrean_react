@@ -82,7 +82,7 @@ object EscPosEncoder {
         buf += BOLD_OFF
 
         // Title
-        buf += text("NOMOR ANTRIAN")
+        buf += text("NOMOR ANTREAN")
         buf += separator()
 
         // Queue number — double size, bold
@@ -94,21 +94,29 @@ object EscPosEncoder {
 
         buf += separator()
 
-        // Details — left aligned
-        buf += ALIGN_LEFT
-        buf += text("Layanan : ${payload.serviceName.take(28)}")
-        buf += text("Waktu   : ${payload.printedAt.take(28)}")
+        // Loket and Time — centered
+        buf += ALIGN_CENTER
+        buf += BOLD_ON
+        buf += text("LOKET: ${payload.serviceName.take(24)}")
+        buf += BOLD_OFF
+        buf += text(payload.printedAt.take(32))
 
         if (payload.customerName.isNotBlank()) {
-            buf += text("Nama    : ${payload.customerName.take(28)}")
+            buf += text("Nama: ${payload.customerName.take(26)}")
         }
 
         buf += separator()
 
         // Footer — centered
         buf += ALIGN_CENTER
-        buf += text("Mohon tunggu hingga nomor")
-        buf += text("Anda dipanggil.")
+        buf += text("Mohon menunggu hingga nomor")
+        buf += text("Anda dipanggil")
+        buf += feedLines(1)
+        buf += BOLD_ON
+        buf += text("Menuju: ${payload.serviceName.take(24)}")
+        buf += BOLD_OFF
+        buf += text("Pantau layar display")
+        buf += feedLines(1)
         buf += text("Terima kasih")
 
         // Some low-cost 58mm printers mis-handle GS V cut commands and can feed very long.
