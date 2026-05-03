@@ -15,6 +15,7 @@ import {
   Clock,
   CheckCircle2,
   Inbox,
+  AlertTriangle,
 } from "lucide-react";
 
 const SERVICE_NAMES: Record<string, string> = {
@@ -27,6 +28,11 @@ type TicketStatus = "waiting" | "called" | "loading";
 
 type DisplayTicket = PrintedTicket & { status: TicketStatus };
 
+type PrintIssue = {
+  title: string;
+  message: string;
+};
+
 export default function HistoryPage() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
@@ -34,7 +40,27 @@ export default function HistoryPage() {
   const [printing, setPrinting] = useState<string | null>(null);
   const [browserPrintTicket, setBrowserPrintTicket] =
     useState<PrintedTicket | null>(null);
+  const [printIssue, setPrintIssue] = useState<PrintIssue | null>(null);
   const [officeName, setOfficeName] = useState("PLN");
+
+  const getBridgeFailureMessage = (reason?: string) => {
+    if (reason === "bluetooth_disabled") {
+      return "Bluetooth tidak aktif. Aktifkan Bluetooth lalu coba cetak ulang.";
+    }
+    if (reason === "permission_denied") {
+      return "Izin Bluetooth ditolak. Izinkan akses Bluetooth di pengaturan aplikasi lalu ulangi cetak.";
+    }
+    if (reason === "no_device_paired") {
+      return "Printer belum dipilih. Pilih printer Bluetooth terlebih dahulu sebelum mencetak ulang.";
+    }
+    if (reason === "timeout") {
+      return "Printer tidak merespons dalam waktu yang ditentukan. Periksa koneksi printer lalu coba lagi.";
+    }
+    if (reason === "io_error") {
+      return "Terjadi gangguan saat mengirim data ke printer. Periksa Bluetooth dan printer lalu coba lagi.";
+    }
+    return "Cetak ulang belum berhasil. Periksa Bluetooth dan printer, lalu coba lagi.";
+  };
 
   const formatPrintedAt = (iso: string) => {
     if (!iso) return "";
@@ -104,9 +130,10 @@ export default function HistoryPage() {
       if (isBridgeAvailable()) {
         const result = await requestBridgePrint(payload, 8000);
         if (!result || result.status !== "success") {
-          alert(
-            `Cetak ulang gagal (${result?.reason ?? "unknown"}). Cek Bluetooth/printer.`,
-          );
+          setPrintIssue({
+            title: "Cetak Ulang Gagal",
+            message: getBridgeFailureMessage(result?.reason),
+          });
         }
       } else {
         // Browser mode: print only selected ticket using dedicated print area.
@@ -126,6 +153,36 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-[#f9f9ff] flex flex-col font-['Inter']">
+      {printIssue && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 backdrop-blur-[2px] p-4">
+          <div className="w-full max-w-sm rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-200 bg-gradient-to-br from-amber-50 via-white to-rose-50 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {printIssue.title}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                    {printIssue.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end px-5 py-4">
+              <button
+                onClick={() => setPrintIssue(null)}
+                className="inline-flex items-center justify-center rounded-xl bg-[#002e5b] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#004482]"
+              >
+                Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-[#002e5b] text-white w-full h-16 flex items-center justify-between px-4 shadow-md sticky top-0 z-10">
         <button
           onClick={() => navigate("/ambil")}

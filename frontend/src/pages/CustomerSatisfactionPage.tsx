@@ -66,15 +66,25 @@ export default function CustomerSatisfactionPage() {
   const [autoRedirectEnabled, setAutoRedirectEnabled] = useState(true);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
 
-  const sidebarNavItems = [
-    { name: "Ambil Antrean", path: "/ambil", icon: Home },
-    { name: "Riwayat Cetak", path: "/history", icon: History },
+  const sidebarNavGroups = [
     {
-      name: "Survey Kepuasan",
-      path: "/survey-kepuasan",
-      icon: ClipboardList,
+      group: "Layanan Antrean",
+      items: [
+        { name: "Ambil Antrean", path: "/ambil", icon: Home },
+        { name: "Riwayat Cetak", path: "/history", icon: History },
+      ],
     },
-    { name: "About", path: "/about", icon: Info },
+    {
+      group: "Lainnya",
+      items: [
+        {
+          name: "Survei Kepuasan",
+          path: "/survey-kepuasan",
+          icon: ClipboardList,
+        },
+        { name: "Tentang Aplikasi", path: "/about", icon: Info },
+      ],
+    },
   ];
 
   const initials = (name?: string) =>
@@ -128,7 +138,7 @@ export default function CustomerSatisfactionPage() {
 
       const result = await submitCustomerSatisfaction(payload);
       if (!result?.success) {
-        throw new Error(result?.error || "Gagal menyimpan survey");
+        throw new Error(result?.error || "Gagal menyimpan survei");
       }
 
       setIsSubmitted(true);
@@ -139,7 +149,7 @@ export default function CustomerSatisfactionPage() {
       setFeedback("");
       setInputDate(today);
     } catch {
-      alert("Gagal menyimpan survey. Silakan coba lagi.");
+      alert("Gagal menyimpan survei. Silakan coba lagi.");
     } finally {
       setSubmitting(false);
     }
@@ -149,17 +159,17 @@ export default function CustomerSatisfactionPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] flex flex-col items-center font-['Inter']">
       {isSidebarOpen && (
         <div
-          className="sm:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
+          className="lg:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col sm:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col lg:translate-x-0 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="sm:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
+        <div className="lg:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
@@ -184,29 +194,36 @@ export default function CustomerSatisfactionPage() {
           </span>
         </div>
 
-        <div className="flex-1 flex flex-col gap-2 px-2 py-3">
-          {sidebarNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+        <div className="flex-1 flex flex-col gap-4 px-2 py-4">
+          {sidebarNavGroups.map((group) => (
+            <div key={group.group} className="flex flex-col gap-1">
+              <h3 className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                {group.group}
+              </h3>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
 
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  setIsSidebarOpen(false);
-                  navigate(item.path);
-                }}
-                className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
-                  isActive
-                    ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-medium text-sm">{item.name}</span>
-              </button>
-            );
-          })}
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      navigate(item.path);
+                    }}
+                    className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
+                      isActive
+                        ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         <div className="px-4 mt-auto border-t border-slate-200 pt-4 pb-4 bg-slate-50">
@@ -236,7 +253,7 @@ export default function CustomerSatisfactionPage() {
 
             <button
               onClick={handleLogout}
-              className="w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center"
+              className="w-10 h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
               title="Logout"
               aria-label="Logout"
             >
@@ -246,17 +263,17 @@ export default function CustomerSatisfactionPage() {
         </div>
       </aside>
 
-      <header className="bg-primary text-white w-full sm:w-[calc(100%-280px)] sm:ml-[280px] h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
+      <header className="bg-primary text-white w-full lg:w-[calc(100%-280px)] lg:ml-[280px] h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
+          className="lg:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
           aria-label="Buka menu"
         >
           <Menu size={24} />
         </button>
         <div className="text-center leading-tight">
           <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-            Survey Kepuasan
+            Survei Kepuasan
           </h1>
           <p className="text-[11px] sm:text-xs text-white/70">
             Evaluasi Layanan Pelanggan
@@ -265,7 +282,7 @@ export default function CustomerSatisfactionPage() {
         <div className="w-10" />
       </header>
 
-      <main className="w-full sm:w-[calc(100%-280px)] sm:ml-[280px] max-w-[45.5rem] px-4 sm:px-5 flex-1 flex flex-col pt-5 sm:pt-7 gap-4 pb-10">
+      <main className="w-full lg:w-[calc(100%-280px)] lg:ml-[280px] max-w-[45.5rem] px-4 sm:px-5 flex-1 flex flex-col pt-5 sm:pt-7 gap-4 pb-10">
         {isSubmitted ? (
           <section className="w-full">
             <div className="relative w-full bg-white rounded-3xl shadow-sm border border-white/70 px-5 py-8 overflow-hidden">
@@ -278,7 +295,7 @@ export default function CustomerSatisfactionPage() {
 
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wide">
                   <Sparkles size={14} />
-                  Survey Berhasil
+                  Survei Berhasil
                 </div>
 
                 <div>
@@ -286,7 +303,7 @@ export default function CustomerSatisfactionPage() {
                     Terima Kasih
                   </h2>
                   <p className="text-on-surface-variant text-sm sm:text-base max-w-lg">
-                    Survey kepuasan Anda berhasil dikirim. Masukan Anda sangat
+                    Survei kepuasan Anda berhasil dikirim. Masukan Anda sangat
                     berarti untuk meningkatkan kualitas pelayanan kami.
                   </p>
                 </div>
@@ -300,7 +317,7 @@ export default function CustomerSatisfactionPage() {
                     }}
                     className="w-full min-h-[52px] rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                   >
-                    Isi Survey Lagi
+                    Isi Survei Lagi
                   </button>
                   <button
                     onClick={() => navigate("/ambil")}
@@ -322,12 +339,12 @@ export default function CustomerSatisfactionPage() {
                         onClick={() => setAutoRedirectEnabled(false)}
                         className="text-primary font-semibold hover:underline"
                       >
-                        Cancel Redirect
+                        Batalkan Pengalihan
                       </button>
                     </div>
                   ) : (
                     <div className="text-xs text-slate-500">
-                      Auto-redirect dibatalkan.
+                      Pengalihan otomatis dibatalkan.
                     </div>
                   )}
                 </div>
@@ -349,7 +366,7 @@ export default function CustomerSatisfactionPage() {
                 </div>
                 <div>
                   <h2 className="text-2xl sm:text-[28px] font-extrabold text-primary mb-1 tracking-tight">
-                    Form Survey Kepuasan
+                    Form Survei Kepuasan
                   </h2>
                   <p className="text-on-surface-variant text-sm">
                     Mohon bantu kami meningkatkan kualitas pelayanan loket.
@@ -439,7 +456,7 @@ export default function CustomerSatisfactionPage() {
                 ) : (
                   <>
                     <Send size={18} />
-                    Submit
+                    Kirim Survei
                   </>
                 )}
               </button>

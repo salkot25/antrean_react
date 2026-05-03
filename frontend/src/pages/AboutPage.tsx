@@ -29,6 +29,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 
 export default function AboutPage() {
+  const WHATSAPP_PHONE = "6281999386550";
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -39,21 +40,89 @@ export default function AboutPage() {
   const handleSendWa = () => {
     const text = waMessage.trim();
     if (!text) return;
-    const url = `https://wa.me/6281999386550?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+
+    const isLoggedIn = Boolean(user);
+    const senderName = user?.fullName || user?.username || "Pengunjung Umum";
+    const senderRole = user?.role
+      ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+      : "Belum Login";
+    const senderType = isLoggedIn ? "Pengguna Login" : "Pengunjung Umum";
+    const accessView = /Android/i.test(navigator.userAgent || "")
+      ? "Android"
+      : /Mobi|iPhone|iPad|Mobile/i.test(navigator.userAgent || "")
+        ? "Mobile Web"
+        : "Web Desktop";
+    const sentAt = new Date().toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const formattedText = [
+      "Halo tim PLN ULP Salatiga,",
+      "",
+      "Saya ingin menyampaikan kritik, saran, atau pertanyaan berikut:",
+      text,
+      "",
+      "Sumber kirim: Halaman Tentang Aplikasi",
+      `Tampilan akses: ${accessView}`,
+      `Jenis pengirim: ${senderType}`,
+      `Pengirim: ${senderName}`,
+      `Peran: ${senderRole}`,
+      `Waktu kirim: ${sentAt}`,
+    ].join("\n");
+
+    const encodedText = encodeURIComponent(formattedText);
+    const appUrl = `whatsapp://send?phone=${WHATSAPP_PHONE}&text=${encodedText}`;
+    const intentWhatsapp = `intent://send?phone=${WHATSAPP_PHONE}&text=${encodedText}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+    const intentWhatsappBusiness = `intent://send?phone=${WHATSAPP_PHONE}&text=${encodedText}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+    const fallbackUrl = `https://api.whatsapp.com/send?phone=${WHATSAPP_PHONE}&text=${encodedText}`;
+    const isAndroid = /Android/i.test(navigator.userAgent || "");
+
+    if (isAndroid) {
+      const launchSequence = [
+        intentWhatsapp,
+        intentWhatsappBusiness,
+        appUrl,
+        fallbackUrl,
+      ];
+
+      launchSequence.forEach((url, index) => {
+        window.setTimeout(() => {
+          if (document.visibilityState === "visible") {
+            window.location.href = url;
+          }
+        }, index * 700);
+      });
+    } else {
+      window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+    }
+
     setWaModalOpen(false);
     setWaMessage("");
   };
 
-  const sidebarNavItems = [
-    { name: "Ambil Antrean", path: "/ambil", icon: Home },
-    { name: "Riwayat Cetak", path: "/history", icon: History },
+  const sidebarNavGroups = [
     {
-      name: "Survey Kepuasan",
-      path: "/survey-kepuasan",
-      icon: ClipboardList,
+      group: "Layanan Antrean",
+      items: [
+        { name: "Ambil Antrean", path: "/ambil", icon: Home },
+        { name: "Riwayat Cetak", path: "/history", icon: History },
+      ],
     },
-    { name: "About", path: "/about", icon: Info },
+    {
+      group: "Lainnya",
+      items: [
+        {
+          name: "Survei Kepuasan",
+          path: "/survey-kepuasan",
+          icon: ClipboardList,
+        },
+        { name: "Tentang Aplikasi", path: "/about", icon: Info },
+      ],
+    },
   ];
 
   const initials = (name?: string) =>
@@ -114,6 +183,11 @@ export default function AboutPage() {
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400 resize-none"
             />
 
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              Pesan akan dikirim dengan format yang sama di mobile maupun web,
+              termasuk sumber kirim, jenis pengirim, dan waktu kirim.
+            </p>
+
             <div className="flex gap-2">
               <button
                 onClick={() => setWaModalOpen(false)}
@@ -135,18 +209,18 @@ export default function AboutPage() {
       )}
       {user && isSidebarOpen && (
         <div
-          className="sm:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
+          className="lg:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {user && (
         <aside
-          className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col sm:translate-x-0 ${
+          className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col lg:translate-x-0 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="sm:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
+          <div className="lg:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
             <button
               onClick={() => setIsSidebarOpen(false)}
               className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
@@ -171,29 +245,36 @@ export default function AboutPage() {
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col gap-2 px-2 py-3">
-            {sidebarNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+          <div className="flex-1 flex flex-col gap-4 px-2 py-4">
+            {sidebarNavGroups.map((group) => (
+              <div key={group.group} className="flex flex-col gap-1">
+                <h3 className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  {group.group}
+                </h3>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
 
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    setIsSidebarOpen(false);
-                    navigate(item.path);
-                  }}
-                  className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
-                    isActive
-                      ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  <Icon size={20} />
-                  <span className="font-medium text-sm">{item.name}</span>
-                </button>
-              );
-            })}
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        setIsSidebarOpen(false);
+                        navigate(item.path);
+                      }}
+                      className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
+                        isActive
+                          ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <Icon size={20} />
+                      <span className="font-medium text-sm">{item.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           <div className="px-4 mt-auto border-t border-slate-200 pt-4 pb-4 bg-slate-50">
@@ -223,7 +304,7 @@ export default function AboutPage() {
 
               <button
                 onClick={handleLogout}
-                className="w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center"
+                className="w-10 h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors inline-flex items-center justify-center"
                 title="Logout"
                 aria-label="Logout"
               >
@@ -236,13 +317,13 @@ export default function AboutPage() {
 
       <header
         className={`bg-primary text-white w-full ${
-          user ? "sm:w-[calc(100%-280px)] sm:ml-[280px]" : ""
+          user ? "lg:w-[calc(100%-280px)] lg:ml-[280px]" : ""
         } h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10`}
       >
         {user ? (
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
+            className="lg:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
             aria-label="Buka menu"
           >
             <Menu size={24} />
@@ -276,7 +357,7 @@ export default function AboutPage() {
 
       <main
         className={`w-full ${
-          user ? "sm:w-[calc(100%-280px)] sm:ml-[280px]" : "max-w-2xl mx-auto"
+          user ? "lg:w-[calc(100%-280px)] lg:ml-[280px]" : "max-w-2xl mx-auto"
         } max-w-[45.5rem] px-4 sm:px-5 flex-1 flex flex-col pt-5 sm:pt-7 gap-5 pb-10`}
       >
         {/* ── Hero Banner ── */}

@@ -27,6 +27,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "./context/AuthContext";
 
@@ -94,6 +95,11 @@ export type PrintedTicket = {
 };
 type LastPrintedTicket = PrintedTicket;
 
+type PrintIssue = {
+  title: string;
+  message: string;
+};
+
 export default function App() {
   const MODAL_OUT_MS = 260;
   const navigate = useNavigate();
@@ -119,6 +125,7 @@ export default function App() {
     connected: boolean;
     address: string;
   } | null>(null);
+  const [printIssue, setPrintIssue] = useState<PrintIssue | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [servicePulseCode, setServicePulseCode] = useState<string | null>(null);
   const [isCtaPopping, setIsCtaPopping] = useState(false);
@@ -126,6 +133,29 @@ export default function App() {
   const modalTransitionTimerRef = useRef<number | null>(null);
 
   const getService = (code: string) => SERVICES.find((s) => s.code === code);
+
+  const showPrintIssue = (title: string, message: string) => {
+    setPrintIssue({ title, message });
+  };
+
+  const getBridgeFailureMessage = (reason?: string) => {
+    if (reason === "bluetooth_disabled") {
+      return "Bluetooth tidak aktif. Aktifkan Bluetooth lalu coba cetak lagi.";
+    }
+    if (reason === "permission_denied") {
+      return "Izin Bluetooth ditolak. Izinkan akses Bluetooth di pengaturan aplikasi lalu ulangi cetak.";
+    }
+    if (reason === "no_device_paired") {
+      return "Printer belum dipilih. Pilih printer Bluetooth terlebih dahulu sebelum mencetak.";
+    }
+    if (reason === "timeout") {
+      return "Printer tidak merespons dalam waktu yang ditentukan. Periksa koneksi printer lalu coba lagi.";
+    }
+    if (reason === "io_error") {
+      return "Terjadi gangguan saat mengirim data ke printer. Periksa Bluetooth dan printer lalu coba lagi.";
+    }
+    return "Cetak tiket belum berhasil. Periksa Bluetooth dan printer, lalu coba cetak ulang.";
+  };
 
   const sidebarNavGroups = [
     {
@@ -143,7 +173,7 @@ export default function App() {
           path: "/survey-kepuasan",
           icon: ClipboardList,
         },
-        { name: "About", path: "/about", icon: Info },
+        { name: "Tentang Aplikasi", path: "/about", icon: Info },
       ],
     },
   ];
@@ -203,16 +233,19 @@ export default function App() {
       checkStatus();
       if (!result.success) {
         if (result.reason === "bluetooth_disabled") {
-          alert(
-            "Bluetooth tidak aktif. Harap aktifkan Bluetooth dan coba lagi.",
+          showPrintIssue(
+            "Bluetooth Belum Aktif",
+            getBridgeFailureMessage(result.reason),
           );
         } else if (result.reason === "permission_denied") {
-          alert(
-            "Izin Bluetooth ditolak. Izinkan akses Bluetooth di pengaturan aplikasi.",
+          showPrintIssue(
+            "Izin Bluetooth Diperlukan",
+            getBridgeFailureMessage(result.reason),
           );
         } else if (result.reason === "no_device_paired") {
-          alert(
-            "Printer belum dipilih. Silakan pilih printer Bluetooth terlebih dahulu.",
+          showPrintIssue(
+            "Printer Belum Dipilih",
+            getBridgeFailureMessage(result.reason),
           );
         }
       }
@@ -421,8 +454,9 @@ export default function App() {
     });
 
     if (isBridgeAvailable()) {
-      alert(
-        `Print gagal (${bridgeResult.reason || "unknown_error"}). Silakan cek Bluetooth/printer lalu coba cetak ulang.`,
+      showPrintIssue(
+        "Cetak Tiket Gagal",
+        getBridgeFailureMessage(bridgeResult.reason),
       );
       return;
     }
@@ -537,7 +571,10 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal mengambil antrean. Silakan coba lagi.");
+      showPrintIssue(
+        "Gagal Mengambil Antrean",
+        "Sistem belum berhasil membuat nomor antrean. Periksa koneksi lalu coba lagi.",
+      );
     } finally {
       setLoading(false);
     }
@@ -607,8 +644,8 @@ export default function App() {
               Nomor Antrean Berhasil Dicetak
             </h2>
             <p className="text-slate-500 max-w-xs mx-auto text-sm">
-              Serahkan nomor antrean kepada pelanggan, lalu arahkan ke ruang tunggu
-              hingga nomor dipanggil.
+              Serahkan nomor antrean kepada pelanggan, lalu arahkan ke ruang
+              tunggu hingga nomor dipanggil.
             </p>
           </div>
 
@@ -815,6 +852,36 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] flex flex-col items-center font-['Inter']">
+      {printIssue && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 backdrop-blur-[2px] p-4">
+          <div className="w-full max-w-sm rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-2xl">
+            <div className="border-b border-slate-200 bg-gradient-to-br from-amber-50 via-white to-rose-50 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {printIssue.title}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                    {printIssue.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end px-5 py-4">
+              <button
+                onClick={() => setPrintIssue(null)}
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-container"
+              >
+                Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isSidebarOpen && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
@@ -1315,7 +1382,8 @@ export default function App() {
                     "modalItemIn 360ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both",
                 }}
               >
-                Pastikan pelanggan menerima nomor antrean sebelum halaman ditutup.
+                Pastikan pelanggan menerima nomor antrean sebelum halaman
+                ditutup.
               </p>
 
               <div
