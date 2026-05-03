@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Eye, EyeOff, ShieldCheck, Zap } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, Zap, X } from "lucide-react";
 import { getConfig } from "../api";
 
 export default function LoginPage() {
@@ -17,6 +17,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotUsername, setForgotUsername] = useState("");
+  const [forgotMessage, setForgotMessage] = useState("");
 
   useEffect(() => {
     getConfig()
@@ -44,6 +48,21 @@ export default function LoginPage() {
     } else {
       setError(result.error || "Login gagal.");
     }
+  };
+
+  const handleForgotSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!forgotUsername.trim() || !forgotMessage.trim()) {
+      alert("Username dan pesan wajib diisi.");
+      return;
+    }
+    const waNumber = "6281999386550";
+    const text = `Halo Admin,\nSaya ingin meminta bantuan terkait akun saya.\n\nUsername: ${forgotUsername.trim()}\nPesan: ${forgotMessage.trim()}`;
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, "_blank");
+    setIsForgotModalOpen(false);
+    setForgotUsername("");
+    setForgotMessage("");
   };
 
   return (
@@ -102,28 +121,48 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right panel — login form ── */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-10">
-            <img
-              src="/logo.png"
-              alt="PLN Logo"
-              className="h-9 w-9 object-contain"
-            />
-            <span className="text-primary text-base font-bold">
-              {officeName}
+      <div className="flex-1 relative h-screen overflow-y-auto bg-slate-50 lg:bg-background flex flex-col">
+        {/* Mobile colored hero background with sharp diagonal cut */}
+        <div 
+          className="absolute top-0 left-0 w-full h-[55%] bg-gradient-to-br from-[#002e5b] via-primary to-[#005BAC] lg:hidden z-0" 
+          style={{ clipPath: 'polygon(0 0, 100% 0, 100% 80%, 0 100%)' }}
+        />
+
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center w-full px-5 pt-10 pb-6">
+          {/* Mobile logo in Hero */}
+          <div className="lg:hidden flex flex-col items-center justify-center gap-3 mb-8 w-full mt-2">
+            <div className="w-[4.5rem] h-[4.5rem] rounded-[1.25rem] bg-white/10 backdrop-blur-md shadow-xl border border-white/20 flex items-center justify-center p-2.5">
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="text-white text-2xl font-extrabold tracking-tight text-center drop-shadow-sm mt-1">
+              Sistem Antrean Digital
             </span>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-3xl font-extrabold text-on-surface">
-              Selamat Datang
-            </h2>
-            <p className="mt-2 text-on-surface-variant text-sm">
-              Masuk ke akun Anda untuk mengakses panel administrasi.
-            </p>
-          </div>
+          <div className="w-full max-w-md bg-white lg:bg-transparent rounded-3xl lg:rounded-none shadow-xl lg:shadow-none p-7 lg:p-0 border border-slate-100 lg:border-none">
+            {/* Desktop Title */}
+            <div className="hidden lg:block mb-8">
+              <h2 className="text-3xl font-extrabold text-on-surface">
+                Selamat Datang
+              </h2>
+              <p className="mt-2 text-on-surface-variant text-sm">
+                Masuk ke akun Anda untuk mengakses panel administrasi.
+              </p>
+            </div>
+
+            {/* Mobile Title */}
+            <div className="lg:hidden text-center mb-7">
+              <h2 className="text-2xl font-bold text-slate-800">
+                Selamat Datang
+              </h2>
+              <p className="mt-1.5 text-slate-500 text-sm">
+                Silakan masuk untuk melanjutkan
+              </p>
+            </div>
 
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             {/* Error banner */}
@@ -205,11 +244,96 @@ export default function LoginPage() {
           </form>
 
           {/* Hint */}
-          <p className="mt-8 text-center text-xs text-outline">
-            Lupa password? Hubungi administrator sistem.
-          </p>
+          <div className="mt-8 text-center text-xs text-outline">
+            <p>
+              Lupa password?{" "}
+              <button
+                onClick={() => setIsForgotModalOpen(true)}
+                className="text-primary hover:underline font-medium"
+              >
+                Hubungi administrator sistem
+              </button>
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* Footer Info pinned to bottom of right panel */}
+      <div className="w-full flex items-center justify-center gap-3 text-xs mt-auto pt-6 pb-2 lg:hidden">
+        <span className="bg-slate-100 text-slate-500 px-2.5 py-1 rounded-md font-semibold">
+          Versi 2.0.0
+        </span>
+        <button
+          onClick={() => navigate("/about")}
+          className="text-slate-500 hover:text-primary transition-colors font-medium flex items-center gap-1.5"
+        >
+          Tentang Aplikasi
+        </button>
+      </div>
+
+      {/* Footer Info for Desktop pinned to bottom of right panel */}
+      <div className="hidden lg:flex absolute bottom-8 right-8 items-center gap-3 text-xs">
+        <span className="bg-slate-100 text-slate-500 px-2.5 py-1 rounded-md font-semibold">
+          Versi 2.0.0
+        </span>
+        <button
+          onClick={() => navigate("/about")}
+          className="text-slate-500 hover:text-primary transition-colors font-medium flex items-center gap-1.5"
+        >
+          Tentang Aplikasi
+        </button>
+      </div>
+    </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-bold text-slate-800">Lupa Password</h3>
+              <button
+                onClick={() => setIsForgotModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleForgotSubmit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={forgotUsername}
+                  onChange={(e) => setForgotUsername(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                  placeholder="Masukkan username Anda"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Pesan
+                </label>
+                <textarea
+                  value={forgotMessage}
+                  onChange={(e) => setForgotMessage(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none h-24"
+                  placeholder="Contoh: Tolong reset password saya karena lupa..."
+                />
+              </div>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+                >
+                  Kirim via WhatsApp
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

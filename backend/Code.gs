@@ -1095,24 +1095,37 @@ function handleDisplay() {
 
   var sessionStart = getSessionStart();
 
-  // ── Count waiting queues per service ──────────────────────────
-  // ── Count waiting queues and find next number per service ──────────────────────────
+  // ── Queue aggregates per service for current session ──────────────────────────
   var waitingByService = {};
   var nextNumberByService = {};
+  var lastIssuedByService = {};
+  var lastIssuedNumPartByService = {};
   var queuesSheet = ss.getSheetByName("queues");
   if (queuesSheet) {
     var qData = queuesSheet.getDataRange().getValues();
     for (var q = 1; q < qData.length; q++) {
       var qService = qData[q][Q_SERVICE];
+      var qNumber = String(qData[q][Q_NUMBER] || "");
       var qStatus = qData[q][Q_STATUS];
       var qCreatedAt = qData[q][Q_CREATED_AT];
       // Use Q_CREATED_AT (actual datetime) for session comparison, same as handleListQueue
       var qTime = qCreatedAt ? new Date(qCreatedAt) : null;
-      if (qStatus === "waiting" && qTime && qTime >= sessionStart) {
-        waitingByService[qService] = (waitingByService[qService] || 0) + 1;
-        // First waiting row = next to be called (sheet ordered by created_at ascending)
-        if (!nextNumberByService[qService]) {
-          nextNumberByService[qService] = qData[q][Q_NUMBER];
+      if (qTime && qTime >= sessionStart) {
+        var numPart = parseInt(qNumber.split("-")[1], 10);
+        if (!isNaN(numPart)) {
+          var prevMax = lastIssuedNumPartByService[qService] || 0;
+          if (numPart >= prevMax) {
+            lastIssuedNumPartByService[qService] = numPart;
+            lastIssuedByService[qService] = qNumber;
+          }
+        }
+
+        if (qStatus === "waiting") {
+          waitingByService[qService] = (waitingByService[qService] || 0) + 1;
+          // First waiting row = next to be called (sheet ordered by created_at ascending)
+          if (!nextNumberByService[qService]) {
+            nextNumberByService[qService] = qNumber;
+          }
         }
       }
     }
@@ -1130,6 +1143,18 @@ function handleDisplay() {
 
     if (name) {
       var withinSession = lastAt && new Date(lastAt) >= sessionStart;
+      var lastIssuedNumber = lastIssuedByService[service] || "";
+      var nextIssuedNumber = "";
+      var lastIssuedNumPart = lastIssuedNumPartByService[service] || 0;
+      if (service) {
+        if (lastIssuedNumPart > 0) {
+          nextIssuedNumber =
+            service + "-" + ("000" + (lastIssuedNumPart + 1)).slice(-3);
+        } else {
+          nextIssuedNumber = service + "-001";
+        }
+      }
+
       displayData[name] = {
         number: withinSession ? lastNum || "--" : "--",
         service: service || "",
@@ -1137,6 +1162,8 @@ function handleDisplay() {
           withinSession && lastAt ? new Date(lastAt).toISOString() : "",
         waitingCount: waitingByService[service] || 0,
         nextNumber: nextNumberByService[service] || "",
+        lastIssuedNumber: lastIssuedNumber,
+        nextIssuedNumber: nextIssuedNumber,
       };
     }
   }

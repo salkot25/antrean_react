@@ -240,7 +240,14 @@ export default function SurveyRecapDashboardPage() {
         scoreSum += SAT_SCORE[s.satisfaction];
       }
       if (s.feedback && s.feedback.trim()) withFeedback += 1;
-      const key = s.inputDate || "Tanpa Tanggal";
+      const rawDate = s.createdAt || s.inputDate;
+      let key = "Tanpa Tanggal";
+      if (rawDate) {
+        const parsed = new Date(rawDate);
+        if (!Number.isNaN(parsed.getTime())) {
+          key = toYmdLocal(parsed);
+        }
+      }
       byDate[key] = (byDate[key] || 0) + 1;
     }
 

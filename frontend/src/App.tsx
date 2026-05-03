@@ -127,15 +127,25 @@ export default function App() {
 
   const getService = (code: string) => SERVICES.find((s) => s.code === code);
 
-  const sidebarNavItems = [
-    { name: "Ambil Antrean", path: "/ambil", icon: Home },
-    { name: "Riwayat Cetak", path: "/history", icon: History },
+  const sidebarNavGroups = [
     {
-      name: "Survey Kepuasan",
-      path: "/survey-kepuasan",
-      icon: ClipboardList,
+      group: "Layanan Antrean",
+      items: [
+        { name: "Ambil Antrean", path: "/ambil", icon: Home },
+        { name: "Riwayat Cetak", path: "/history", icon: History },
+      ],
     },
-    { name: "About", path: "/about", icon: Info },
+    {
+      group: "Lainnya",
+      items: [
+        {
+          name: "Survey Kepuasan",
+          path: "/survey-kepuasan",
+          icon: ClipboardList,
+        },
+        { name: "About", path: "/about", icon: Info },
+      ],
+    },
   ];
 
   const initials = (name?: string) =>
@@ -548,10 +558,10 @@ export default function App() {
 
   const svc = selectedService ? getService(selectedService) : null;
   const selectedLastNumber = svc
-    ? (displayData[svc.loket]?.number as string) || "--"
+    ? (displayData[svc.loket]?.lastIssuedNumber as string) || "--"
     : "--";
   const selectedNextNumber = svc
-    ? (displayData[svc.loket]?.nextNumber as string) || "--"
+    ? (displayData[svc.loket]?.nextIssuedNumber as string) || "--"
     : "--";
   const selectedWaitingCount = svc
     ? Number(displayData[svc.loket]?.waitingCount ?? 0)
@@ -679,22 +689,21 @@ export default function App() {
         {/* ── THERMAL PRINT LAYOUT ── */}
         <div id="thermal-print" className="print-only">
           <div className="thermal-header">NOMOR ANTREAN</div>
+          <hr className="thermal-divider-thick" />
           <div className="thermal-number-box">
             <span className="thermal-number">{ticket.number}</span>
           </div>
           <div className="thermal-loket">LOKET: {tSvc.name}</div>
           <div className="thermal-time">{printedAt}</div>
-          <hr className="thermal-divider" />
+          <hr className="thermal-divider-thick" />
           <p className="thermal-info">
             Mohon menunggu hingga nomor
             <br />
             Anda dipanggil
           </p>
-          <p className="thermal-detail">Layanan: {tSvc.name}</p>
-          <p className="thermal-detail">Pantau layar antrean</p>
-          {customerName && (
-            <p className="thermal-detail">Atas nama: {customerName}</p>
-          )}
+          <p className="thermal-detail-bold">Menuju: {tSvc.name}</p>
+          <p className="thermal-detail">Pantau layar display</p>
+          <br />
           <p className="thermal-thanks">Terima kasih</p>
         </div>
 
@@ -728,64 +737,79 @@ export default function App() {
           .thermal-header {
             text-align: center;
             font-weight: 900;
-            font-size: 15px;
-            letter-spacing: 1px;
+            font-size: 16px;
             margin-bottom: 4px;
+            font-family: sans-serif;
+          }
+          .thermal-divider-thick {
+            border: none;
+            border-top: 2px solid #000;
+            margin: 6px 0 8px 0;
           }
           .thermal-number-box {
-            border: 3px solid #000;
-            border-radius: 4px;
+            border: 2px solid #000;
+            border-radius: 8px;
             text-align: center;
-            padding: 4px 0;
-            margin: 4px 0 6px 0;
+            padding: 8px 0;
+            margin: 0 0 8px 0;
           }
           .thermal-number {
-            font-size: 42px;
+            font-size: 46px;
             font-weight: 900;
             letter-spacing: -1px;
-            line-height: 1.1;
+            line-height: 1;
+            font-family: sans-serif;
           }
           .thermal-loket {
-            background: #f0f0f0;
+            background: #e0e0e0;
             border-radius: 4px;
             text-align: center;
-            font-weight: 700;
-            font-size: 11px;
-            padding: 5px 4px;
-            margin-bottom: 5px;
-            letter-spacing: 0.3px;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 6px 4px;
+            margin-bottom: 6px;
+            font-family: sans-serif;
+            color: #000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
           .thermal-time {
             text-align: center;
             font-size: 10px;
-            color: #444;
-            margin-bottom: 5px;
-          }
-          .thermal-divider {
-            border: none;
-            border-top: 1px solid #ccc;
-            margin: 6px 0;
+            color: #000;
+            margin-bottom: 8px;
+            font-family: sans-serif;
           }
           .thermal-info {
             text-align: center;
-            color: #c00;
+            color: #000;
             font-size: 10px;
-            font-style: italic;
-            margin-bottom: 3px;
-            line-height: 1.4;
+            margin-bottom: 4px;
+            line-height: 1.3;
+            font-family: sans-serif;
+          }
+          .thermal-detail-bold {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 4px;
+            font-family: sans-serif;
           }
           .thermal-detail {
             text-align: center;
             font-size: 10px;
             color: #000;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
+            font-family: sans-serif;
           }
           .thermal-thanks {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             font-style: italic;
-            color: #444;
-            margin-top: 6px;
+            color: #000;
+            margin-top: 8px;
+            font-family: sans-serif;
           }
         `}</style>
       </div>
@@ -831,29 +855,36 @@ export default function App() {
           </span>
         </div>
 
-        <div className="flex-1 flex flex-col gap-2 px-2 py-3">
-          {sidebarNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+        <div className="flex-1 flex flex-col gap-4 px-2 py-4">
+          {sidebarNavGroups.map((group) => (
+            <div key={group.group} className="flex flex-col gap-1">
+              <h3 className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                {group.group}
+              </h3>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
 
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  setIsSidebarOpen(false);
-                  navigate(item.path);
-                }}
-                className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
-                  isActive
-                    ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-medium text-sm">{item.name}</span>
-              </button>
-            );
-          })}
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      navigate(item.path);
+                    }}
+                    className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
+                      isActive
+                        ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         <div className="px-4 mt-auto border-t border-slate-200 pt-4 pb-4 bg-slate-50">
@@ -905,7 +936,7 @@ export default function App() {
             Ambil Nomor Antrean
           </h1>
           <p className="text-[11px] sm:text-xs text-white/70">
-            Mode Operasional Lobi
+            Pusat Pengambilan Tiket
           </p>
         </div>
         <button

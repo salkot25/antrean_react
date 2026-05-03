@@ -45,18 +45,24 @@ export const getDisplayData = async () => {
         service: "CS",
         waitingCount: 4,
         nextNumber: "CS-013",
+        lastIssuedNumber: "CS-016",
+        nextIssuedNumber: "CS-017",
       },
       "Loket PLN Mobile Experience": {
         number: "PLN-005",
         service: "PLN",
         waitingCount: 2,
         nextNumber: "PLN-006",
+        lastIssuedNumber: "PLN-007",
+        nextIssuedNumber: "PLN-008",
       },
       "Loket Customer Care": {
         number: "CC-002",
         service: "CC",
         waitingCount: 7,
         nextNumber: "CC-003",
+        lastIssuedNumber: "CC-009",
+        nextIssuedNumber: "CC-010",
       },
     };
   }

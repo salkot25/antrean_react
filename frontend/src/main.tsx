@@ -30,6 +30,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           {/* Public routes — no auth required */}
           <Route path="/" element={<DisplayPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/about" element={<AboutPage />} />
 
           {/* Protected routes */}
           <Route element={<RequireAuth />}>
@@ -45,7 +46,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               path="/survey-kepuasan-dashboard"
               element={<SurveyRecapDashboardPage />}
             />
-            <Route path="/about" element={<AboutPage />} />
             <Route element={<AdminLayout />}>
               <Route
                 path="/admin"

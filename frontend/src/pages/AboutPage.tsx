@@ -133,113 +133,128 @@ export default function AboutPage() {
           </div>
         </div>
       )}
-      {isSidebarOpen && (
+      {user && isSidebarOpen && (
         <div
           className="sm:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      <aside
-        className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col sm:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="sm:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
-            aria-label="Tutup menu"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="px-6 py-4 flex items-center gap-3 border-b border-slate-200">
-          <img
-            src="/logo.png"
-            alt="PLN Logo"
-            className="h-10 w-10 object-contain"
-          />
-          <span className="text-sm font-bold text-[#002e5b] leading-tight">
-            QMS PLN
-            <br />
-            <span className="text-xs font-medium text-slate-500">
-              PLN ULP Salatiga
-            </span>
-          </span>
-        </div>
-
-        <div className="flex-1 flex flex-col gap-2 px-2 py-3">
-          {sidebarNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  setIsSidebarOpen(false);
-                  navigate(item.path);
-                }}
-                className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
-                  isActive
-                    ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-medium text-sm">{item.name}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="px-4 mt-auto border-t border-slate-200 pt-4 pb-4 bg-slate-50">
-          <div className="flex items-center gap-2">
+      {user && (
+        <aside
+          className={`fixed top-0 left-0 h-full w-[280px] z-50 bg-white/95 backdrop-blur-sm border-r border-slate-200 transition-transform duration-200 flex flex-col sm:translate-x-0 ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="sm:hidden px-4 py-3 border-b border-slate-200 flex items-center justify-end">
             <button
-              onClick={() => {
-                setIsSidebarOpen(false);
-                navigate("/profile");
-              }}
-              className="flex-1 px-2 py-2 flex items-center gap-3 rounded-xl hover:bg-slate-100 transition-colors text-left"
+              onClick={() => setIsSidebarOpen(false)}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
+              aria-label="Tutup menu"
             >
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
-                {initials(user?.fullName || user?.username)}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-[#005BAC] truncate">
-                  {user?.fullName || user?.username || "Operator"}
-                </p>
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  <ShieldCheck size={11} />
-                  {user?.role
-                    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
-                    : "User"}
-                </p>
-              </div>
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center"
-              title="Logout"
-              aria-label="Logout"
-            >
-              <LogOut size={16} />
+              <X size={18} />
             </button>
           </div>
-        </div>
-      </aside>
 
-      <header className="bg-primary text-white w-full sm:w-[calc(100%-280px)] sm:ml-[280px] h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10">
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
-          aria-label="Buka menu"
-        >
-          <Menu size={24} />
-        </button>
+          <div className="px-6 py-4 flex items-center gap-3 border-b border-slate-200">
+            <img
+              src="/logo.png"
+              alt="PLN Logo"
+              className="h-10 w-10 object-contain"
+            />
+            <span className="text-sm font-bold text-[#002e5b] leading-tight">
+              QMS PLN
+              <br />
+              <span className="text-xs font-medium text-slate-500">
+                PLN ULP Salatiga
+              </span>
+            </span>
+          </div>
+
+          <div className="flex-1 flex flex-col gap-2 px-2 py-3">
+            {sidebarNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    navigate(item.path);
+                  }}
+                  className={`mx-2 flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
+                    isActive
+                      ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium text-sm">{item.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="px-4 mt-auto border-t border-slate-200 pt-4 pb-4 bg-slate-50">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setIsSidebarOpen(false);
+                  navigate("/profile");
+                }}
+                className="flex-1 px-2 py-2 flex items-center gap-3 rounded-xl hover:bg-slate-100 transition-colors text-left"
+              >
+                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
+                  {initials(user?.fullName || user?.username)}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#005BAC] truncate">
+                    {user?.fullName || user?.username || "Operator"}
+                  </p>
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <ShieldCheck size={11} />
+                    {user?.role
+                      ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+                      : "User"}
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      <header
+        className={`bg-primary text-white w-full ${
+          user ? "sm:w-[calc(100%-280px)] sm:ml-[280px]" : ""
+        } h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm sticky top-0 z-10`}
+      >
+        {user ? (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors"
+            aria-label="Buka menu"
+          >
+            <Menu size={24} />
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate("/login")}
+            className="px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors text-sm font-medium flex items-center gap-1"
+          >
+            Kembali
+          </button>
+        )}
         <div className="text-center leading-tight">
           <h1 className="text-base sm:text-lg font-semibold tracking-tight">
             Tentang Aplikasi
@@ -253,13 +268,17 @@ export default function AboutPage() {
           onClick={() => setWaModalOpen(true)}
           className="p-2 rounded-full hover:bg-white/10 transition-colors"
           aria-label="Kirim kritik, saran, atau pertanyaan via WhatsApp"
-          title="Kritik, Saran &amp; Pertanyaan"
+          title="Kritik, Saran & Pertanyaan"
         >
           <MessageCircle size={22} />
         </button>
       </header>
 
-      <main className="w-full sm:w-[calc(100%-280px)] sm:ml-[280px] max-w-[45.5rem] px-4 sm:px-5 flex-1 flex flex-col pt-5 sm:pt-7 gap-5 pb-10">
+      <main
+        className={`w-full ${
+          user ? "sm:w-[calc(100%-280px)] sm:ml-[280px]" : "max-w-2xl mx-auto"
+        } max-w-[45.5rem] px-4 sm:px-5 flex-1 flex flex-col pt-5 sm:pt-7 gap-5 pb-10`}
+      >
         {/* ── Hero Banner ── */}
         <section className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-br from-primary to-[#003f8a] text-white px-5 py-8 shadow-md">
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />

@@ -147,7 +147,7 @@ export default function HistoryPage() {
 
       <main className="flex-1 w-full max-w-md mx-auto px-4 pt-6 pb-12 flex flex-col gap-5">
         <p className="text-sm text-gray-500 text-center">
-          Pantau riwayat nomor antrean hari ini yang tersinkron dari backend.
+          Daftar nomor antrean hari ini yang tersinkronisasi di sistem.
         </p>
 
         {loading && tickets.length === 0 ? (
