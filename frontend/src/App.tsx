@@ -701,9 +701,6 @@ export default function App() {
             <br />
             Anda dipanggil
           </p>
-          <p className="thermal-detail-bold">Menuju: {tSvc.name}</p>
-          <p className="thermal-detail">Pantau layar display</p>
-          <br />
           <p className="thermal-thanks">Terima kasih</p>
         </div>
 

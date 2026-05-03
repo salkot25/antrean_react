@@ -112,11 +112,6 @@ object EscPosEncoder {
         buf += text("Mohon menunggu hingga nomor")
         buf += text("Anda dipanggil")
         buf += feedLines(1)
-        buf += BOLD_ON
-        buf += text("Menuju: ${payload.serviceName.take(24)}")
-        buf += BOLD_OFF
-        buf += text("Pantau layar display")
-        buf += feedLines(1)
         buf += text("Terima kasih")
 
         // Some low-cost 58mm printers mis-handle GS V cut commands and can feed very long.
