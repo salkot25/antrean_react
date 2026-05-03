@@ -5,3 +5,10 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+
+# Android local/build artifacts
+android/.gradle/
+android/**/build/
+android/app/release/
+android/local.properties
+android/.idea/
