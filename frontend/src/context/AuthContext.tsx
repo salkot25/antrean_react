@@ -40,8 +40,8 @@ const STORAGE_KEY = "pln_qms_session";
 // Fallback for old storage key
 const OLD_STORAGE_KEY = "pln_qms_user";
 
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-const ABSOLUTE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours
+const INACTIVITY_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
+const ABSOLUTE_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 // ─── Provider ─────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
