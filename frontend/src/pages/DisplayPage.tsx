@@ -2,9 +2,36 @@ import { useState, useEffect, useRef } from "react";
 import { getDisplayData, getConfig } from "../api";
 import { speakQueue } from "../utils/tts";
 import type { TTSConfig } from "../utils/tts";
-import { Zap, Clock, Cloud, Smartphone, Headphones, Users } from "lucide-react";
+import {
+  Zap,
+  Clock,
+  Cloud,
+  Smartphone,
+  Headphones,
+  Users,
+  Sun,
+  Moon,
+} from "lucide-react";
 
 export default function DisplayPage() {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pln_display_theme");
+      if (saved === "dark" || saved === "light") return saved;
+    }
+    return "light";
+  });
+
+  const isDark = theme === "dark";
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "light" ? "dark" : "light";
+      localStorage.setItem("pln_display_theme", next);
+      return next;
+    });
+  };
+
   const [displayData, setDisplayData] = useState<Record<string, any>>({});
   // callingState: maps counter loket name -> queue number currently being announced
   const [callingState, setCallingState] = useState<Record<string, string>>({});
@@ -291,38 +318,73 @@ export default function DisplayPage() {
     switch (service) {
       case "PLN":
         return {
-          icon: <Smartphone size={28} className="text-[#16A34A]" />,
-          borderColor: "border-[#16A34A]",
-          labelBg: "bg-[#16A34A]/15 text-[#16A34A]",
-          callingBg: "bg-yellow-400/20 text-yellow-700",
+          icon: (
+            <Smartphone
+              size={28}
+              className={isDark ? "text-emerald-400" : "text-[#16A34A]"}
+            />
+          ),
+          borderColor: isDark ? "border-emerald-500" : "border-[#16A34A]",
+          labelBg: isDark
+            ? "bg-emerald-500/20 text-emerald-300"
+            : "bg-[#16A34A]/15 text-[#16A34A]",
+          callingBg: "bg-yellow-400/20 text-yellow-500",
         };
       case "CS":
         return {
-          icon: <Users size={28} className="text-[#005BAC]" />,
-          borderColor: "border-[#005BAC]",
-          labelBg: "bg-[#005BAC]/10 text-[#005BAC]",
-          callingBg: "bg-yellow-400/20 text-yellow-700",
+          icon: (
+            <Users
+              size={28}
+              className={isDark ? "text-cyan-400" : "text-[#005BAC]"}
+            />
+          ),
+          borderColor: isDark ? "border-cyan-500" : "border-[#005BAC]",
+          labelBg: isDark
+            ? "bg-cyan-500/20 text-cyan-300"
+            : "bg-[#005BAC]/10 text-[#005BAC]",
+          callingBg: "bg-yellow-400/20 text-yellow-500",
         };
       case "CC":
         return {
-          icon: <Headphones size={28} className="text-[#F59E0B]" />,
-          borderColor: "border-[#F59E0B]",
-          labelBg: "bg-[#F59E0B]/15 text-[#F59E0B]",
-          callingBg: "bg-yellow-400/20 text-yellow-700",
+          icon: (
+            <Headphones
+              size={28}
+              className={isDark ? "text-amber-400" : "text-[#F59E0B]"}
+            />
+          ),
+          borderColor: isDark ? "border-amber-500" : "border-[#F59E0B]",
+          labelBg: isDark
+            ? "bg-amber-500/20 text-amber-300"
+            : "bg-[#F59E0B]/15 text-[#F59E0B]",
+          callingBg: "bg-yellow-400/20 text-yellow-500",
         };
       default:
         return {
           icon: <Zap size={28} className="text-slate-400" />,
-          borderColor: "border-slate-400",
-          labelBg: "bg-slate-200 text-slate-600",
-          callingBg: "bg-yellow-400/20 text-yellow-700",
+          borderColor: isDark ? "border-slate-600" : "border-slate-400",
+          labelBg: isDark
+            ? "bg-slate-700 text-slate-300"
+            : "bg-slate-200 text-slate-600",
+          callingBg: "bg-yellow-400/20 text-yellow-500",
         };
     }
   };
 
   return (
-    <div className="bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] h-screen w-screen overflow-hidden flex flex-col font-['Inter']">
-      <header className="bg-primary leading-tight tracking-tight border-b border-blue-900/20 shadow-sm flex justify-between items-center h-16 lg:h-20 px-4 lg:px-8 w-full shrink-0 z-50 text-white">
+    <div
+      className={`h-screen w-screen overflow-hidden flex flex-col font-['Inter'] transition-colors duration-500 ${
+        isDark
+          ? "bg-gradient-to-b from-[#080d1a] via-[#0e1628] to-[#070b14] text-slate-100"
+          : "bg-gradient-to-b from-[#eaf4ff] via-[#f7fbff] to-[#eef4fb] text-slate-800"
+      }`}
+    >
+      <header
+        className={`leading-tight tracking-tight border-b shadow-sm flex justify-between items-center h-16 lg:h-20 px-4 lg:px-8 w-full shrink-0 z-50 text-white transition-colors duration-500 ${
+          isDark
+            ? "bg-[#09152b] border-slate-700/60"
+            : "bg-primary border-blue-900/20"
+        }`}
+      >
         <div className="flex items-center gap-3 lg:gap-4 min-w-0">
           <Zap className="text-[#FFC72C] shrink-0" size={30} fill="#FFC72C" />
           <div className="min-w-0">
@@ -334,7 +396,7 @@ export default function DisplayPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 lg:gap-5">
+        <div className="flex items-center gap-2.5 lg:gap-4">
           <div className="text-white/90 font-semibold text-xs lg:text-lg flex items-center gap-1.5 lg:gap-2">
             <Clock size={18} className="lg:w-6 lg:h-6" />
             <span className="hidden md:inline">{formattedDateTime()}</span>
@@ -345,7 +407,35 @@ export default function DisplayPage() {
               })}
             </span>
           </div>
-          <Cloud size={22} className="text-white/80 lg:w-7 lg:h-7" />
+          <Cloud size={22} className="text-white/80 lg:w-7 lg:h-7 hidden sm:block" />
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className={`flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-3.5 py-1.5 rounded-full border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#FFC72C] cursor-pointer shadow-sm ${
+              isDark
+                ? "bg-slate-800/90 hover:bg-slate-700/90 border-slate-600/70 text-amber-300"
+                : "bg-white/15 hover:bg-white/25 border-white/25 text-white"
+            }`}
+            title={`Ganti ke mode ${isDark ? "terang (Light Mode)" : "gelap (Dark Mode)"}`}
+            aria-label="Toggle dark mode dan light mode"
+          >
+            {isDark ? (
+              <>
+                <Moon size={16} className="text-amber-300 fill-amber-300/30" />
+                <span className="text-[11px] lg:text-xs font-bold uppercase tracking-wider text-amber-200">
+                  Dark
+                </span>
+              </>
+            ) : (
+              <>
+                <Sun size={16} className="text-yellow-300 fill-yellow-300/30" />
+                <span className="text-[11px] lg:text-xs font-bold uppercase tracking-wider text-white">
+                  Light
+                </span>
+              </>
+            )}
+          </button>
         </div>
       </header>
 
@@ -358,11 +448,19 @@ export default function DisplayPage() {
               return (
                 <div
                   key={idx}
-                  className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col relative overflow-hidden transition-all duration-500 ${
+                  className={`rounded-3xl border flex flex-col relative overflow-hidden transition-all duration-500 ${
+                    isDark
+                      ? "bg-[#111c38]/90 border-slate-700/60 shadow-lg shadow-black/40 backdrop-blur-sm"
+                      : "bg-white border-slate-200 shadow-sm"
+                  } ${
                     c.isCalling
-                      ? "ring-2 ring-yellow-400 shadow-lg shadow-yellow-200/60 z-10"
+                      ? isDark
+                        ? "ring-2 ring-yellow-400 shadow-xl shadow-yellow-500/20 z-10"
+                        : "ring-2 ring-yellow-400 shadow-lg shadow-yellow-200/60 z-10"
                       : c.isServing
-                        ? "ring-2 ring-emerald-300 shadow-md shadow-emerald-100/60"
+                        ? isDark
+                          ? "ring-2 ring-emerald-500/60 shadow-md shadow-emerald-500/10"
+                          : "ring-2 ring-emerald-300 shadow-md shadow-emerald-100/60"
                         : ""
                   }`}
                 >
@@ -373,52 +471,91 @@ export default function DisplayPage() {
 
                   {/* header: loket name + icon */}
                   <div className="flex justify-between items-center px-4 lg:px-5 pt-5 pb-2">
-                    <span className="font-bold text-base lg:text-xl text-slate-800 leading-tight truncate">
+                    <span
+                      className={`font-bold text-base lg:text-xl leading-tight truncate ${
+                        isDark ? "text-slate-100" : "text-slate-800"
+                      }`}
+                    >
                       {c.label}
                     </span>
                     {styles.icon}
                   </div>
 
                   {/* split body */}
-                  <div className="flex flex-1 divide-x divide-slate-200 px-1 pb-4 lg:pb-5 mt-1 min-h-0">
+                  <div
+                    className={`flex flex-1 divide-x px-1 pb-4 lg:pb-5 mt-1 min-h-0 ${
+                      isDark ? "divide-slate-700/60" : "divide-slate-200"
+                    }`}
+                  >
                     {/* left: sedang dilayani */}
                     <div className="flex-1 flex flex-col items-center justify-center gap-1 px-2 lg:px-3 py-2">
                       <span
                         className={`text-[40px] lg:text-[64px] leading-none tracking-tight whitespace-nowrap tabular-nums font-black transition-all duration-300 ${
                           c.isCalling
-                            ? "text-[#FFC72C] animate-pulse drop-shadow-md"
+                            ? "text-[#FFC72C] animate-pulse drop-shadow-[0_0_12px_rgba(255,199,44,0.4)]"
                             : c.isServing
-                              ? "text-emerald-600"
-                              : "text-slate-300"
+                              ? isDark
+                                ? "text-emerald-400"
+                                : "text-emerald-600"
+                              : isDark
+                                ? "text-slate-600"
+                                : "text-slate-300"
                         }`}
                       >
                         {c.number}
                       </span>
-                      <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-widest text-slate-400">
+                      <span
+                        className={`text-[11px] lg:text-xs font-semibold uppercase tracking-widest ${
+                          isDark ? "text-slate-400" : "text-slate-400"
+                        }`}
+                      >
                         {c.isCalling ? "Memanggil" : "Sedang Dilayani"}
                       </span>
                     </div>
 
                     {/* right: nomor berikutnya / menunggu */}
-                    {/* right: next number (top) + waiting count (bottom) */}
-                    <div className="flex-1 flex flex-col divide-y divide-slate-100 px-2 lg:px-3">
+                    <div
+                      className={`flex-1 flex flex-col divide-y px-2 lg:px-3 ${
+                        isDark ? "divide-slate-700/60" : "divide-slate-100"
+                      }`}
+                    >
                       {/* next number */}
                       <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2">
                         <span
-                          className={`text-lg lg:text-2xl leading-none tracking-tight font-black tabular-nums transition-all duration-300 ${c.nextNumber ? "text-emerald-500" : "text-slate-300"}`}
+                          className={`text-lg lg:text-2xl leading-none tracking-tight font-black tabular-nums transition-all duration-300 ${
+                            c.nextNumber
+                              ? isDark
+                                ? "text-emerald-400"
+                                : "text-emerald-500"
+                              : isDark
+                                ? "text-slate-600"
+                                : "text-slate-300"
+                          }`}
                         >
                           {c.nextNumber || "—"}
                         </span>
-                        <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-widest text-slate-400">
+                        <span
+                          className={`text-[11px] lg:text-xs font-semibold uppercase tracking-widest ${
+                            isDark ? "text-slate-400" : "text-slate-400"
+                          }`}
+                        >
                           Nomor Berikutnya
                         </span>
                       </div>
                       {/* waiting count */}
                       <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2">
-                        <span className="text-[38px] lg:text-[56px] leading-none tracking-tight font-black text-emerald-500 tabular-nums">
+                        <span
+                          className={`text-[38px] lg:text-[56px] leading-none tracking-tight font-black tabular-nums ${
+                            isDark ? "text-emerald-400" : "text-emerald-500"
+                          }`}
+                        >
                           {c.waitingCount}
                         </span>
-                        <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-widest text-slate-400">
+                        <span
+                          className={`text-[11px] lg:text-xs font-semibold uppercase tracking-widest ${
+                            isDark ? "text-slate-400" : "text-slate-400"
+                          }`}
+                        >
                           Menunggu
                         </span>
                       </div>
@@ -430,7 +567,13 @@ export default function DisplayPage() {
           </div>
         </section>
 
-        <section className="lg:col-span-3 xl:col-span-7 min-h-0 bg-white rounded-3xl overflow-hidden relative border border-slate-200 shadow-sm">
+        <section
+          className={`lg:col-span-3 xl:col-span-7 min-h-0 rounded-3xl overflow-hidden relative border transition-colors duration-500 ${
+            isDark
+              ? "bg-[#111c38]/90 border-slate-700/60 shadow-lg shadow-black/40"
+              : "bg-white border-slate-200 shadow-sm"
+          }`}
+        >
           <div className="absolute inset-0">
             {getEmbedUrl() ? (
               <>
@@ -451,16 +594,26 @@ export default function DisplayPage() {
 
                 <button
                   onClick={scheduleAutoVideoAudioActivation}
-                  className="absolute bottom-3 right-3 z-20 bg-black/55 hover:bg-black/75 text-white text-[11px] lg:text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition-all"
+                  className="absolute bottom-3 right-3 z-20 bg-black/55 hover:bg-black/75 text-white text-[11px] lg:text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition-all shadow-md"
                   title="Aktifkan suara video agar audio diputar"
                 >
                   Aktifkan Audio Video
                 </button>
 
-                <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
+                <div
+                  className={`absolute inset-0 pointer-events-none ${
+                    isDark ? "bg-black/20" : "bg-primary/10 mix-blend-multiply"
+                  }`}
+                />
               </>
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-[#004482] via-[#00386e] to-[#00254c] text-white flex flex-col items-center justify-center p-8 text-center select-none">
+              <div
+                className={`absolute inset-0 flex flex-col items-center justify-center p-8 text-center select-none ${
+                  isDark
+                    ? "bg-gradient-to-br from-[#0b1730] via-[#071124] to-[#040914] text-white"
+                    : "bg-gradient-to-br from-[#004482] via-[#00386e] to-[#00254c] text-white"
+                }`}
+              >
                 <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mb-6 shadow-inner">
                   <Zap size={44} className="text-[#FFC72C] drop-shadow-md" fill="#FFC72C" />
                 </div>
@@ -480,7 +633,13 @@ export default function DisplayPage() {
         </section>
       </main>
 
-      <footer className="bg-primary font-semibold uppercase tracking-wider text-sm lg:text-lg fixed bottom-0 left-0 w-full h-14 lg:h-16 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] flex items-center overflow-hidden whitespace-nowrap px-4 lg:px-8 z-50">
+      <footer
+        className={`font-semibold uppercase tracking-wider text-sm lg:text-lg fixed bottom-0 left-0 w-full h-14 lg:h-16 flex items-center overflow-hidden whitespace-nowrap px-4 lg:px-8 z-50 transition-colors duration-500 ${
+          isDark
+            ? "bg-[#09152b] border-t border-slate-700/60 shadow-[0_-4px_16px_rgba(0,0,0,0.5)]"
+            : "bg-primary border-t border-blue-900/20 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]"
+        }`}
+      >
         <div className="bg-[#FFC72C] text-primary px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-bold mr-3 lg:mr-4 shrink-0 flex items-center gap-2">
           <Zap size={18} fill="#002e5b" />
           INFORMASI
