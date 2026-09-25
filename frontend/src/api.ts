@@ -1,6 +1,5 @@
 import { GAS_WEB_APP_URL } from "./config";
 
-// ─── createQueue ────────────────────────────────────────────────────────────────
 export const createQueue = async (service: string, customerName?: string) => {
   if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL_HERE") {
     return {
@@ -10,10 +9,31 @@ export const createQueue = async (service: string, customerName?: string) => {
     };
   }
 
-  // Use GET with query params to actually read the response (no-cors POST blocks response reading)
-  // (params variable removed — not used in actual fetch call)
+  // 1. Direct POST (reads response JSON directly without race condition)
+  try {
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "create",
+        service,
+        customerName: customerName || "",
+      }),
+    });
 
-  // Fallback: POST no-cors (response unreadable, but writes data)
+    const data = await response.json();
+    if (data && data.number) {
+      return {
+        number: data.number,
+        status: data.status || "waiting",
+        customer_name: data.customer_name ?? customerName ?? "",
+      };
+    }
+  } catch (err) {
+    console.warn("Direct POST createQueue failed, falling back:", err);
+  }
+
+  // 2. Fallback: POST no-cors + brief poll
   await fetch(GAS_WEB_APP_URL, {
     method: "POST",
     mode: "no-cors",
@@ -25,8 +45,7 @@ export const createQueue = async (service: string, customerName?: string) => {
     }),
   });
 
-  // After write, poll to get the latest queue number we just created
-  await new Promise((r) => setTimeout(r, 1200)); // brief wait for GAS to finish writing
+  await new Promise((r) => setTimeout(r, 1000));
   const list = await getWaitingQueues(service);
   const latest = Array.isArray(list) ? list[list.length - 1] : null;
   return {
@@ -142,13 +161,22 @@ export const callNextQueue = async (service: string, counter: string) => {
     return { number: `${service}-013`, status: "called", customer_name: "" };
   }
 
-  await fetch(GAS_WEB_APP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ action: "call", service, counter }),
-  });
-  return { success: true };
+  try {
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "call", service, counter }),
+    });
+    return await response.json();
+  } catch {
+    await fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "call", service, counter }),
+    });
+    return { success: true };
+  }
 };
 
 // ─── getConfig ───────────────────────────────────────────────────────────────────

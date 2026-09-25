@@ -842,20 +842,25 @@ function handleCreateQueue(request) {
     "yyyy-MM-dd",
   );
 
-  // Find last number for the current session and this service
+  // Find last number for the current session and this service (scan backwards from newest row)
   var data = sheet.getDataRange().getValues();
   var lastNum = 0;
 
-  for (var i = 1; i < data.length; i++) {
+  for (var i = data.length - 1; i >= 1; i--) {
     var createdAt = data[i][Q_CREATED_AT];
-    var rowService = data[i][Q_SERVICE];
-    if (
-      createdAt &&
-      new Date(createdAt) >= sessionStart &&
-      rowService === service
-    ) {
-      var numPart = parseInt(String(data[i][Q_NUMBER]).split("-")[1], 10);
-      if (!isNaN(numPart) && numPart > lastNum) lastNum = numPart;
+    if (createdAt) {
+      var rowDate = new Date(createdAt);
+      if (rowDate < sessionStart) {
+        break; // Passed today's session, stop early
+      }
+      var rowService = data[i][Q_SERVICE];
+      if (rowService === service) {
+        var numPart = parseInt(String(data[i][Q_NUMBER]).split("-")[1], 10);
+        if (!isNaN(numPart) && numPart > lastNum) {
+          lastNum = numPart;
+          break; // First match in reverse chronological order is the latest
+        }
+      }
     }
   }
 

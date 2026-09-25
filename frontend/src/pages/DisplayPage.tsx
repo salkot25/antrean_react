@@ -5,12 +5,13 @@ import type { TTSConfig } from "../utils/tts";
 import {
   Zap,
   Clock,
-  Cloud,
   Smartphone,
   Headphones,
   Users,
   Sun,
   Moon,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 export default function DisplayPage() {
@@ -31,6 +32,11 @@ export default function DisplayPage() {
       return next;
     });
   };
+
+  const [syncStatus, setSyncStatus] = useState<"synced" | "reconnecting">(
+    "synced",
+  );
+  const failCountRef = useRef(0);
 
   const [displayData, setDisplayData] = useState<Record<string, any>>({});
   // callingState: maps counter loket name -> queue number currently being announced
@@ -207,7 +213,11 @@ export default function DisplayPage() {
     const fetchData = async () => {
       try {
         const data = await getDisplayData();
-        setDisplayData(data);
+        if (data && typeof data === "object") {
+          setDisplayData(data);
+          failCountRef.current = 0;
+          setSyncStatus("synced");
+        }
 
         for (const fixed of FIXED_COUNTERS) {
           const item = data[fixed.loketName] as any;
@@ -246,6 +256,10 @@ export default function DisplayPage() {
         prevDataRef.current = data;
       } catch (error) {
         console.error("Failed to fetch display data", error);
+        failCountRef.current += 1;
+        if (failCountRef.current >= 3) {
+          setSyncStatus("reconnecting");
+        }
       }
     };
 
@@ -407,7 +421,29 @@ export default function DisplayPage() {
               })}
             </span>
           </div>
-          <Cloud size={22} className="text-white/80 lg:w-7 lg:h-7 hidden sm:block" />
+
+          {/* Real-time Connection Watchdog Badge */}
+          {syncStatus === "synced" ? (
+            <div
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-all ${
+                isDark
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  : "bg-emerald-500/20 border-emerald-400/40 text-emerald-100"
+              }`}
+              title="Terhubung ke server antrean (Real-time live sync)"
+            >
+              <Wifi size={13} className={isDark ? "text-emerald-400" : "text-emerald-200"} />
+              <span>Live</span>
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[11px] font-semibold animate-pulse"
+              title="Koneksi terganggu. Mencoba menghubungkan kembali ke server..."
+            >
+              <WifiOff size={13} className="text-amber-300" />
+              <span>Reconnecting</span>
+            </div>
+          )}
 
           {/* Theme Toggle Button */}
           <button

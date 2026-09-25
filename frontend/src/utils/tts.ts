@@ -5,12 +5,28 @@ export interface TTSConfig {
   onEnd?: () => void; // Callback when TTS finishes speaking
 }
 
+// Retain utterances in memory to prevent Chromium garbage collection bug
+const activeUtterances = new Set<SpeechSynthesisUtterance>();
+
 export const speakQueue = (
   number: string,
   counterName: string,
   config?: TTSConfig,
 ) => {
-  if (!window.speechSynthesis) return;
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    config?.onEnd?.();
+    return;
+  }
+
+  // Clear previous or stuck utterance to prevent audio queue stalling
+  try {
+    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  } catch {
+    // ignore synthesizer cancel errors
+  }
 
   // Format number for better reading: CS-012 -> "C S, nol satu dua"
   const [prefix, num] = number.split("-");
@@ -42,10 +58,21 @@ export const speakQueue = (
     utterance.voice = selectedVoice;
   }
 
-  // Fire callback when TTS finishes
-  if (config?.onEnd) {
-    utterance.onend = () => config.onEnd!();
-  }
+  let settled = false;
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(safetyTimer);
+    activeUtterances.delete(utterance);
+    config?.onEnd?.();
+  };
 
+  utterance.onend = finish;
+  utterance.onerror = finish;
+
+  // Safety fallback: if browser fails to trigger onend/onerror, release ducked audio after 10s
+  const safetyTimer = setTimeout(finish, 10_000);
+
+  activeUtterances.add(utterance);
   window.speechSynthesis.speak(utterance);
 };
