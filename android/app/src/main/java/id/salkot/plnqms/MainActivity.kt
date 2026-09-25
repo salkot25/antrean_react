@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
+            mediaPlaybackRequiresUserGesture = false
         }
 
         // Enable WebView debugging in debug builds

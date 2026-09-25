@@ -15,9 +15,9 @@ export default function DisplayPage() {
   const prevDataRef = useRef<Record<string, any>>({});
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Supports both single video and playlist embeds
+  // Supports both single video and playlist embeds, or none
   const [ytEmbed, setYtEmbed] = useState<{
-    type: "video" | "playlist";
+    type: "video" | "playlist" | "none";
     id: string;
   }>({ type: "video", id: "DHua0l0Hhu4" });
 
@@ -118,25 +118,31 @@ export default function DisplayPage() {
 
         if (config && config.youtubeUrl) {
           try {
-            const raw = config.youtubeUrl as string;
-            const urlObj = new URL(raw);
-            const listId = urlObj.searchParams.get("list");
-            const videoId = urlObj.searchParams.get("v");
-
-            if (listId) {
-              setYtEmbed({ type: "playlist", id: listId });
-            } else if (videoId) {
-              setYtEmbed({ type: "video", id: videoId });
+            const raw = (config.youtubeUrl as string).trim();
+            if (raw.toLowerCase() === "none" || raw.toLowerCase() === "off" || !raw) {
+              setYtEmbed({ type: "none", id: "" });
             } else {
-              const pathParts = urlObj.pathname.split("/");
-              const possibleId = pathParts[pathParts.length - 1];
-              if (possibleId && possibleId.length === 11) {
-                setYtEmbed({ type: "video", id: possibleId });
+              const urlObj = new URL(raw);
+              const listId = urlObj.searchParams.get("list");
+              const videoId = urlObj.searchParams.get("v");
+
+              if (listId) {
+                setYtEmbed({ type: "playlist", id: listId });
+              } else if (videoId) {
+                setYtEmbed({ type: "video", id: videoId });
+              } else {
+                const pathParts = urlObj.pathname.split("/").filter(Boolean);
+                const possibleId = pathParts[pathParts.length - 1];
+                if (possibleId && possibleId.length === 11) {
+                  setYtEmbed({ type: "video", id: possibleId });
+                }
               }
             }
           } catch {
-            const raw = config.youtubeUrl as string;
-            if (raw.startsWith("PL") || raw.startsWith("RD")) {
+            const raw = (config.youtubeUrl as string).trim();
+            if (raw.toLowerCase() === "none" || raw.toLowerCase() === "off" || !raw) {
+              setYtEmbed({ type: "none", id: "" });
+            } else if (raw.startsWith("PL") || raw.startsWith("RD")) {
               setYtEmbed({ type: "playlist", id: raw });
             } else {
               setYtEmbed({ type: "video", id: raw });
@@ -246,6 +252,25 @@ export default function DisplayPage() {
       nextNumber,
     };
   });
+
+  const getEmbedUrl = () => {
+    if (ytEmbed.type === "none" || !ytEmbed.id) return "";
+
+    const origin =
+      typeof window !== "undefined" &&
+      window.location.origin &&
+      window.location.origin !== "null"
+        ? window.location.origin
+        : "https://antrean.salkot.online";
+
+    const originParam = encodeURIComponent(origin);
+    const baseParams = `autoplay=1&mute=1&loop=1&controls=0&enablejsapi=1&playsinline=1&rel=0&iv_load_policy=3&origin=${originParam}`;
+
+    if (ytEmbed.type === "playlist") {
+      return `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(ytEmbed.id)}&${baseParams}`;
+    }
+    return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytEmbed.id)}?${baseParams}&playlist=${encodeURIComponent(ytEmbed.id)}`;
+  };
 
   const formattedDateTime = () => {
     const d = currentTime;
@@ -407,33 +432,50 @@ export default function DisplayPage() {
 
         <section className="lg:col-span-3 xl:col-span-7 min-h-0 bg-white rounded-3xl overflow-hidden relative border border-slate-200 shadow-sm">
           <div className="absolute inset-0">
-            <iframe
-              ref={iframeRef}
-              key={`${ytEmbed.type}-${ytEmbed.id}`}
-              width="100%"
-              height="100%"
-              src={
-                ytEmbed.type === "playlist"
-                  ? `https://www.youtube.com/embed/videoseries?list=${ytEmbed.id}&autoplay=1&mute=1&loop=1&controls=0&enablejsapi=1`
-                  : `https://www.youtube.com/embed/${ytEmbed.id}?autoplay=1&mute=1&loop=1&playlist=${ytEmbed.id}&controls=0&enablejsapi=1`
-              }
-              title="PLN Corporate Video"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full object-cover"
-              onLoad={scheduleAutoVideoAudioActivation}
-            />
+            {getEmbedUrl() ? (
+              <>
+                <iframe
+                  ref={iframeRef}
+                  key={`${ytEmbed.type}-${ytEmbed.id}`}
+                  width="100%"
+                  height="100%"
+                  src={getEmbedUrl()}
+                  title="PLN Corporate Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onLoad={scheduleAutoVideoAudioActivation}
+                />
 
-            <button
-              onClick={scheduleAutoVideoAudioActivation}
-              className="absolute bottom-3 right-3 z-20 bg-black/55 hover:bg-black/75 text-white text-[11px] lg:text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition-all"
-              title="Aktifkan suara video agar audio diputar"
-            >
-              Aktifkan Audio Video
-            </button>
+                <button
+                  onClick={scheduleAutoVideoAudioActivation}
+                  className="absolute bottom-3 right-3 z-20 bg-black/55 hover:bg-black/75 text-white text-[11px] lg:text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition-all"
+                  title="Aktifkan suara video agar audio diputar"
+                >
+                  Aktifkan Audio Video
+                </button>
 
-            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
+                <div className="absolute inset-0 bg-primary/10 mix-blend-multiply pointer-events-none" />
+              </>
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-[#004482] via-[#00386e] to-[#00254c] text-white flex flex-col items-center justify-center p-8 text-center select-none">
+                <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mb-6 shadow-inner">
+                  <Zap size={44} className="text-[#FFC72C] drop-shadow-md" fill="#FFC72C" />
+                </div>
+                <h2 className="text-2xl lg:text-4xl font-extrabold uppercase tracking-wider mb-3">
+                  {officeName}
+                </h2>
+                <p className="text-white/80 max-w-lg text-sm lg:text-lg font-medium leading-relaxed mb-6">
+                  Listrik untuk Kehidupan yang Lebih Baik. Silakan menunggu nomor antrean Anda dipanggil di loket layanan terkait.
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-xs lg:text-sm text-[#FFC72C] font-semibold border border-white/15">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Sistem Antrean Aktif
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
